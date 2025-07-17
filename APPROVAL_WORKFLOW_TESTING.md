@@ -4,12 +4,77 @@
 ### Overview
 This guide will help you test the enhanced approval workflow for your Terraform Atlantis workshop. The workflow enforces GitOps best practices with mandatory approvals and policy validation.
 
+> **⚠️ Important**: Testing happens on **this repository** (`terraform-atlantis-workshop`), but requires GitHub integration setup first.
+
+## 📋 **Prerequisites**
+
+Before running these tests, ensure you have:
+
+1. **✅ GitHub Integration Configured**
+   - Created GitHub Personal Access Token (with `repo` and `admin:repo_hook` permissions)
+   - Set up webhook secret
+   - Configured `.env` file with your GitHub details
+   - Run `./setup-github-integration.ps1` if needed
+
+2. **✅ Services Running**
+   ```powershell
+   # Start LocalStack and Atlantis
+   docker-compose up -d
+   
+   # Verify services are running
+   docker-compose ps
+   ```
+
+3. **✅ Ngrok Tunnel Active** (for webhook delivery)
+   ```powershell
+   # In a separate terminal
+   ngrok http 4141
+   # Update ATLANTIS_ATLANTIS_URL in .env with the ngrok URL
+   ```
+
+4. **✅ Repository Webhook Configured**
+   - GitHub repository settings → Webhooks
+   - Payload URL: `https://your-ngrok-url.ngrok-free.app/events`
+   - Content type: `application/json`
+   - Secret: your webhook secret from `.env`
+   - Events: Pull requests, Issue comments, Push
+
+---
+
+## 🔧 **Quick Setup Verification**
+
+Before starting the tests, verify your setup:
+
+```powershell
+# 1. Check if .env file exists and is configured
+if (Test-Path .env) { 
+    Write-Host "✅ .env file exists" 
+    Get-Content .env | Select-String "ATLANTIS_GH_USER|ATLANTIS_REPO_ALLOWLIST|ATLANTIS_ATLANTIS_URL"
+} else { 
+    Write-Host "❌ .env file missing - copy from .env.example and configure" 
+}
+
+# 2. Check if services are running
+docker-compose ps
+
+# 3. Test Atlantis health
+Invoke-RestMethod -Uri "http://localhost:4141/healthz" -Method Get
+```
+
+**Expected Output:**
+- ✅ `.env` file exists with your GitHub username and repository
+- ✅ LocalStack and Atlantis containers are running
+- ✅ Atlantis health check returns "ok"
+
 ---
 
 ## 🧪 **Test Scenarios**
 
 ### **Scenario 1: Basic Approval Workflow**
 **Objective**: Verify pull request → plan → approve → apply workflow
+
+> **📍 Repository**: Tests run on this repository (`Bright-04/terraform-atlantis-workshop`)  
+> **🔄 Workflow**: Create branch → Make changes → Push → Create PR → Review → Approve → Apply
 
 #### Steps:
 1. **Create test branch**
@@ -57,13 +122,16 @@ This guide will help you test the enhanced approval workflow for your Terraform 
    ```
 
 4. **Create Pull Request**
-   - Go to GitHub and create PR from test-basic-approval to main
-   - Observe Atlantis automatic plan comment
+   - Go to GitHub: `https://github.com/Bright-04/terraform-atlantis-workshop`
+   - Create PR from `test-basic-approval` to `main` branch
+   - **Watch for**: Atlantis will automatically comment with a Terraform plan within 1-2 minutes
+   - **Check**: PR status shows "Some checks haven't completed yet" (this is the approval requirement)
 
 5. **Review and Approve**
-   - Review the Terraform plan in PR comments
-   - Approve the PR in GitHub
-   - Comment `atlantis apply` to execute
+   - Review the Terraform plan in the Atlantis comment
+   - Click "Approve" on the PR in GitHub (or have someone else approve it)
+   - **After approval**: Comment `atlantis apply` on the PR to execute the changes
+   - **Watch for**: Atlantis will apply the changes and comment with results
 
 **Expected Results:**
 - ✅ Atlantis automatically comments with plan
