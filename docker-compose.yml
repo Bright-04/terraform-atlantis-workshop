@@ -48,6 +48,10 @@ services:
       - AWS_DEFAULT_REGION=us-east-1
       - AWS_ACCESS_KEY_ID=test
       - AWS_SECRET_ACCESS_KEY=test
+      - AWS_ENDPOINT_URL_EC2=http://localstack:4566
+      - AWS_ENDPOINT_URL_S3=http://localstack:4566
+      - AWS_ENDPOINT_URL_IAM=http://localstack:4566
+      - AWS_ENDPOINT_URL_STS=http://localstack:4566
     volumes:
       - ./atlantis:/atlantis
       - ./terraform:/terraform
