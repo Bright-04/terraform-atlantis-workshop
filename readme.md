@@ -36,45 +36,54 @@ This workshop demonstrates **Environment Provisioning Automation** using Terrafo
 - [x] **LocalStack Environment Setup**
   - Docker Compose configuration for LocalStack
   - Support for EC2, S3, RDS, IAM, CloudWatch, Lambda, API Gateway
-  - Local development environment ready
+  - Local development environment ready and tested
 
 - [x] **Terraform Infrastructure Foundation**
   - VPC with public/private subnets (10.0.0.0/16)
   - Internet Gateway and route tables
-  - Security groups for web servers
-  - EC2 instance with user data
-  - S3 bucket for testing
-  - Complete variable definitions
+  - Security groups for web servers (HTTP, HTTPS, SSH)
+  - EC2 instance with user data script
+  - Complete variable definitions and validation
   - Output values for resource references
+  - Successfully deployed and tested on LocalStack
+
+- [x] **Atlantis Integration**
+  - Complete Atlantis server configuration in Docker Compose
+  - GitHub integration setup with webhook support
+  - Approval workflow definitions in atlantis.yaml
+  - Environment-based configuration with .env support
+  - PowerShell script for GitHub integration setup
+  - Terraform v1.6.0 integration with LocalStack
 
 - [x] **Dual Environment Support**
-  - LocalStack configuration for cost-free development
-  - AWS configuration for production deployment
+  - LocalStack configuration for cost-free development (active)
+  - AWS configuration for production deployment (backup files)
   - Environment-specific provider configurations
-  - Flexible deployment scripts
+  - Flexible deployment and destruction scripts
 
-- [x] **Project Structure**
-  - Organized terraform modules
+- [x] **Project Structure & Automation**
+  - Organized terraform configurations
   - Backup configurations for different environments
-  - PowerShell deployment scripts
-  - Documentation templates
+  - PowerShell deployment and destroy scripts
+  - GitHub integration automation script
+  - Comprehensive documentation and examples
 
 ### 🚧 In Progress
-- [ ] **Atlantis Integration**
-  - Atlantis server configuration
-  - Webhook setup for GitHub integration
-  - Approval workflow definitions
+- [ ] **S3 Bucket Implementation**
+  - S3 bucket resource available in backup files
+  - Versioning configuration ready
+  - Need to integrate into main configuration
 
+### 📋 Planned
 - [ ] **Monitoring Setup**
   - CloudWatch metrics and alarms
   - Cost monitoring dashboard
   - Infrastructure health checks
 
-### 📋 Planned
-- [ ] **Approval Workflows**
-  - Pull request-based infrastructure changes
+- [ ] **Advanced Approval Workflows**
   - Multi-stage approval process
   - Automated compliance checks
+  - Branch-based deployment strategies
 
 - [ ] **Cost Controls**
   - Budget alerts and limits
@@ -95,25 +104,38 @@ This workshop demonstrates **Environment Provisioning Automation** using Terrafo
 
 ```
 terraform-atlantis-workshop/
-├── docker-compose.yml              # LocalStack container configuration
+├── atlantis.yaml                   # Atlantis workflow configuration
+├── docker-compose.yml              # LocalStack and Atlantis containers
+├── setup-github-integration.ps1    # GitHub integration setup script
+├── .env.example                    # Environment variables template
 ├── workshop_info.md                # Workshop requirements and objectives
+├── dev.md                          # Development notes and guidelines
+├── ENVIRONMENT_SETUP.md            # Environment setup instructions
+├── TESTING.md                      # Testing procedures
 ├── terraform/
 │   ├── main.tf                     # Current Terraform configuration (LocalStack)
 │   ├── variables.tf                # Variable definitions
 │   ├── outputs.tf                  # Output values
 │   ├── versions.tf                 # Provider requirements
-│   ├── terraform.tfvars            # Variable values (not in git)
+│   ├── terraform.tfvars            # Variable values (configured)
 │   ├── terraform.tfvars.example    # Example variables
+│   ├── terraform.tfstate           # Current state (deployed)
+│   ├── terraform.tfstate.backup    # State backup
 │   ├── deploy.ps1                  # Deployment script
 │   ├── destroy.ps1                 # Cleanup script
 │   ├── README.md                   # Terraform-specific documentation
 │   └── backup/
 │       ├── main-aws.tf             # AWS production configuration
-│       ├── main-localstack.tf      # LocalStack development configuration
-│       └── main.tf                 # Generic backup configuration
-├── atlantis/                       # Atlantis configuration (planned)
-├── docs/                           # Documentation (planned)
-├── monitoring/                     # Monitoring configuration (planned)
+│       ├── main-localstack.tf      # LocalStack with S3 bucket
+│       ├── main.tf                 # Generic backup configuration
+│       └── versions.tf             # Provider version backups
+├── atlantis/
+│   ├── atlantis.db                 # Atlantis database file
+│   ├── bin/
+│   │   └── terraform1.6.0         # Terraform binary
+│   └── plugin-cache/               # Terraform plugin cache
+├── docs/                           # Documentation (placeholder)
+├── monitoring/                     # Monitoring configuration (placeholder)
 └── localstack-data/                # LocalStack persistence data
 ```
 
@@ -124,8 +146,9 @@ terraform-atlantis-workshop/
 - PowerShell (Windows) or equivalent shell
 - Git for version control
 - AWS CLI (for production deployment)
+- GitHub account (for Atlantis integration)
 
-### Quick Start with LocalStack
+### Quick Start with LocalStack + Atlantis
 
 1. **Clone and Navigate**
    ```powershell
@@ -133,18 +156,28 @@ terraform-atlantis-workshop/
    cd terraform-atlantis-workshop
    ```
 
-2. **Start LocalStack**
+2. **Configure GitHub Integration (Optional)**
    ```powershell
-   docker-compose up -d
+   # Run the setup script to configure GitHub integration
+   .\setup-github-integration.ps1
    ```
 
-3. **Deploy Infrastructure**
+3. **Start LocalStack and Atlantis**
+   ```powershell
+   # Start both LocalStack and Atlantis services
+   docker-compose up -d
+   
+   # Check services are running
+   docker-compose ps
+   ```
+
+4. **Deploy Infrastructure (Direct Method)**
    ```powershell
    cd terraform
    .\deploy.ps1
    ```
 
-4. **Verify Deployment**
+5. **Verify Deployment**
    ```powershell
    # Set LocalStack environment variables
    $env:AWS_ACCESS_KEY_ID="test"
@@ -156,7 +189,25 @@ terraform-atlantis-workshop/
    aws --endpoint-url=http://localhost:4566 s3 ls
    ```
 
-### Production Deployment (AWS)
+6. **Access Atlantis UI (if configured)**
+   ```
+   http://localhost:4141
+   ```
+
+### GitOps Workflow with Atlantis
+
+Once GitHub integration is configured:
+
+1. **Create a Pull Request** with infrastructure changes
+2. **Atlantis automatically runs** `terraform plan`
+3. **Review the plan** in the PR comments
+4. **Approve the PR** following your approval workflow
+5. **Comment `atlantis apply`** to apply changes
+6. **Atlantis applies** the infrastructure changes
+
+### Manual Deployment (Alternative)
+
+For direct deployment without GitOps workflow:
 
 1. **Configure AWS Credentials**
    ```powershell
@@ -188,60 +239,121 @@ Customize these values in `terraform.tfvars` or through environment variables.
 
 ## Key Features
 
+### GitOps Workflow with Atlantis
+- **Pull Request-Based Infrastructure Changes**: All changes through PR workflow
+- **Automated Plan Generation**: Atlantis automatically runs `terraform plan`
+- **Approval Requirements**: Configurable approval workflows before apply
+- **GitHub Integration**: Seamless integration with GitHub webhooks
+- **Audit Trail**: Complete history of infrastructure changes
+
 ### Cost-Effective Development
 - **LocalStack Integration**: Develop and test without AWS costs
+- **Container-Based Setup**: Quick environment provisioning
 - **Resource Optimization**: Efficient resource allocation
 - **Environment Isolation**: Separate development and production
 
 ### Infrastructure as Code
 - **Terraform Best Practices**: Modular, reusable configurations
 - **Version Control**: All infrastructure changes tracked
-- **Automated Deployment**: PowerShell scripts for consistency
+- **Automated Deployment**: PowerShell and Atlantis-based deployment
+- **State Management**: Proper state file handling and backup
 
 ### Security & Compliance
 - **Security Groups**: Properly configured network access
 - **Resource Tagging**: Consistent labeling strategy
 - **Environment Separation**: Isolated development/production
+- **Approval Workflows**: Controlled infrastructure changes
+
+### Operational Excellence
+- **Comprehensive Documentation**: Clear setup and usage guides
+- **Automated Scripts**: PowerShell automation for common tasks
+- **Container Orchestration**: Docker Compose for service management
+- **Monitoring Ready**: Structured for monitoring integration
 
 ## Next Steps
 
-1. **Atlantis Integration**
-   - Configure Atlantis server
-   - Set up GitHub webhooks
-   - Implement approval workflows
+1. **Complete S3 Integration**
+   - Move S3 bucket from backup to main configuration
+   - Add S3 bucket versioning and security configurations
+   - Test S3 integration with LocalStack
 
-2. **Monitoring & Alerting**
+2. **Enhance Atlantis Workflows**
+   - Configure multi-environment workflows
+   - Add policy checks and validation
+   - Implement custom approval requirements
+
+3. **Monitoring & Alerting**
    - Deploy CloudWatch dashboards
-   - Set up cost alerts
-   - Configure health checks
+   - Set up cost alerts and monitoring
+   - Configure infrastructure health checks
 
-3. **Advanced Features**
+4. **Advanced Features**
    - Implement Terraform modules
-   - Add automated testing
+   - Add automated testing with terratest
    - Set up CI/CD pipelines
 
-4. **Documentation**
-   - Operational runbooks
-   - Troubleshooting guides
-   - Best practices documentation
+5. **Production Hardening**
+   - Implement remote state backend
+   - Add encryption and security scanning
+   - Configure backup and disaster recovery
+
+6. **Documentation Enhancement**
+   - Create operational runbooks
+   - Add troubleshooting guides
+   - Document best practices and patterns
 
 ## Troubleshooting
 
 ### Common Issues
+
+**LocalStack Issues:**
 - **LocalStack not starting**: Check Docker Desktop is running
 - **Port conflicts**: Ensure ports 4566 and 4510-4559 are available
-- **Permission issues**: Verify AWS credentials and IAM permissions
+- **Service timeouts**: Wait for LocalStack health check to pass
+
+**Atlantis Issues:**
+- **Atlantis not accessible**: Check port 4141 is available
+- **GitHub webhook errors**: Verify .env configuration and webhook URL
+- **Permission errors**: Ensure GitHub token has proper permissions
+
+**Terraform Issues:**
+- **State lock errors**: Check if terraform processes are running
+- **Provider errors**: Verify LocalStack is running and accessible
+- **Resource conflicts**: Check for existing resources in LocalStack
+
+### Service Management
+
+**Check Service Status:**
+```powershell
+# Check all services
+docker-compose ps
+
+# Check specific service logs
+docker-compose logs localstack
+docker-compose logs atlantis
+```
+
+**Restart Services:**
+```powershell
+# Restart specific service
+docker-compose restart localstack
+docker-compose restart atlantis
+
+# Restart all services
+docker-compose restart
+```
 
 ### Cleanup
 ```powershell
 # Destroy infrastructure
+cd terraform
 .\destroy.ps1
 
-# Stop LocalStack
+# Stop all services
 docker-compose down
 
-# Remove volumes (optional)
-docker-compose down -v
+# Remove volumes and networks (complete cleanup)
+docker-compose down -v --remove-orphans
 ```
 
 ## Contributing
