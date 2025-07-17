@@ -8,7 +8,3 @@ projects:
     autoplan:
       when_modified: ["*.tf", "*.tfvars", "*.tfvars.json"]
       enabled: true
-    apply_requirements: 
-      - "approved"
-      - "mergeable"
-      - "undiverged"
