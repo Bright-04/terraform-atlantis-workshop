@@ -46,3 +46,16 @@ npm-debug.log*
 # Backup files
 *.backup
 *.bak
+
+# LocalStack
+localstack-data/
+.localstack/
+
+# Temporary files
+*.tmp
+*.temp
+
+# Archive files
+*.zip
+*.tar
+*.tar.gz

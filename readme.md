@@ -1,5 +1,5 @@
-# Environment Provisioning Automation Workshop
-## Terraform & Atlantis Infrastructure Automation
+# Terraform & Atlantis Infrastructure Automation Workshop
+## Enterprise-Grade AWS Environment Provisioning with GitOps
 
 ### 🎯 Workshop Purpose & Definition
 
