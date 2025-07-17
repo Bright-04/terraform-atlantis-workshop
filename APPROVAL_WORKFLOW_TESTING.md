@@ -13,20 +13,45 @@ This guide will help you test the enhanced approval workflow for your Terraform 
 
 #### Steps:
 1. **Create test branch**
-   ```bash
+   ```powershell
    git checkout -b test-basic-approval
    ```
 
 2. **Make a simple change**
-   ```bash
-   # Edit terraform/terraform.tfvars
-   # Add comment: # Testing basic approval workflow
-   echo "# Testing basic approval workflow" >> terraform/terraform.tfvars
+   > **Note**: `terraform.tfvars` is in `.gitignore` so changes to it won't trigger Atlantis. We'll modify tracked Terraform files instead.
+   
+   ```powershell
+   # Option A: Add a comment to variables.tf (minimal change)
+   echo "" >> terraform/variables.tf
+   echo "# Testing basic approval workflow - $(Get-Date)" >> terraform/variables.tf
+   ```
+   
+   **OR (Better for testing)**
+   
+   ```powershell
+   # Option B: Add a simple tag to an existing resource (shows actual Terraform plan)
+   # This will trigger a real Terraform plan showing the change
+   
+   # Add a test tag to the VPC resource in main.tf
+   # Find the VPC resource and add TestApproval = "true" to its tags
+   (Get-Content terraform\main.tf) -replace 
+   '  tags = {
+    Name = "\$\{var\.project_name\}-vpc"
+  }', 
+   '  tags = {
+    Name = "${var.project_name}-vpc"
+    TestApproval = "true"
+  }' | Set-Content terraform\main.tf
    ```
 
 3. **Commit and push**
-   ```bash
-   git add terraform/terraform.tfvars
+   ```powershell
+   # If you used Option A (variables.tf)
+   git add terraform/variables.tf
+   
+   # If you used Option B (main.tf)
+   git add terraform/main.tf
+   
    git commit -m "test: basic approval workflow"
    git push origin test-basic-approval
    ```
@@ -45,6 +70,39 @@ This guide will help you test the enhanced approval workflow for your Terraform 
 - ✅ Apply blocked until PR approval
 - ✅ Apply succeeds after approval and comment
 - ✅ Infrastructure changes applied to LocalStack
+
+---
+
+### **Alternative Simple Changes for Testing**
+
+If you want to test with different types of changes:
+
+#### **Option 1: Add an output (safest)**
+```powershell
+# Add to terraform/outputs.tf
+echo "" >> terraform/outputs.tf
+echo "# Test output" >> terraform/outputs.tf
+echo "output \"test_timestamp\" {" >> terraform/outputs.tf
+echo "  description = \"Test approval workflow\"" >> terraform/outputs.tf
+echo "  value       = \"$(Get-Date)\"" >> terraform/outputs.tf
+echo "}" >> terraform/outputs.tf
+```
+
+#### **Option 2: Modify variable description**
+```powershell
+# Edit terraform/variables.tf to change a description
+(Get-Content terraform\variables.tf) -replace 
+'description = "AWS region"', 
+'description = "AWS region for deployment"' | Set-Content terraform\variables.tf
+```
+
+#### **Option 3: Add data source (read-only)**
+```powershell
+# Add to terraform/main.tf (after existing data sources)
+echo "" >> terraform/main.tf
+echo "# Test data source for approval workflow" >> terraform/main.tf
+echo "data \"aws_caller_identity\" \"current\" {}" >> terraform/main.tf
+```
 
 ---
 
