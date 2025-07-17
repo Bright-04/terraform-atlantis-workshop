@@ -16,6 +16,47 @@ services:
     networks:
       - localstack-network
 
+  atlantis:
+    container_name: atlantis_workshop
+    image: ghcr.io/runatlantis/atlantis:latest
+    ports:
+      - "4141:4141"
+    env_file:
+      - .env
+    environment:
+      # GitHub Integration - Using environment variables
+      - ATLANTIS_REPO_ALLOWLIST=${ATLANTIS_REPO_ALLOWLIST}
+      - ATLANTIS_ATLANTIS_URL=${ATLANTIS_ATLANTIS_URL}
+      - ATLANTIS_GH_USER=${ATLANTIS_GH_USER}
+      - ATLANTIS_GH_TOKEN=${ATLANTIS_GH_TOKEN}
+      - ATLANTIS_GH_WEBHOOK_SECRET=${ATLANTIS_GH_WEBHOOK_SECRET}${ATLANTIS_GH_WEBHOOK_SECRET}
+      
+      # Atlantis Configuration
+      - ATLANTIS_DATA_DIR=/atlantis
+      - ATLANTIS_LOG_LEVEL=info
+      - ATLANTIS_ENABLE_POLICY_CHECKS=false
+      - ATLANTIS_ENABLE_DIFF_MARKDOWN_FORMAT=true
+      - ATLANTIS_DEFAULT_TF_VERSION=v1.6.0
+      - ATLANTIS_DISABLE_APPLY_ALL=true
+      - ATLANTIS_REQUIRE_APPROVAL=true
+      - ATLANTIS_REQUIRE_MERGEABLE=true
+      - ATLANTIS_WRITE_GIT_CREDS=true
+      - ATLANTIS_ALLOW_FORK_PRS=true
+      
+      # AWS/LocalStack Configuration
+      - AWS_DEFAULT_REGION=us-east-1
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+    volumes:
+      - ./atlantis:/atlantis
+      - ./terraform:/terraform
+      - ./atlantis.yaml:/atlantis.yaml
+    depends_on:
+      - localstack
+    networks:
+      - localstack-network
+
 networks:
   localstack-network:
     driver: bridge
+

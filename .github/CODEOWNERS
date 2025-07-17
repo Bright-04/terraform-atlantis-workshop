@@ -1,0 +1,18 @@
+# Global owners - all files require review from repository owner
+* @Bright-04
+
+# Terraform specific - infrastructure changes require DevOps review
+/terraform/ @Bright-04
+*.tf @Bright-04
+*.tfvars @Bright-04
+
+# Atlantis configuration - workflow changes require approval
+atlantis.yaml @Bright-04
+/.github/ @Bright-04
+
+# Docker configuration - container changes require review
+docker-compose.yml @Bright-04
+
+# Documentation - can be reviewed by anyone
+*.md @Bright-04
+/docs/ @Bright-04
