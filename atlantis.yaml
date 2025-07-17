@@ -32,10 +32,10 @@ workflows:
             extra_args: ["-out", "workshop.tfplan"]
         - run: |
             echo "🔍 Plan Summary:"
-            terraform show -no-color workshop.tfplan | grep -E "Plan:|No changes"
+            terraform show -no-color workshop.tfplan | grep -E "Plan:|No changes" || echo "Plan completed"
             echo ""
             echo "📋 Resources to be modified:"
-            terraform show -json workshop.tfplan | jq -r '.resource_changes[]? | "\(.action): \(.address)"' || echo "No resource changes"
+            terraform show -json workshop.tfplan | jq -r '.resource_changes[]? | "\(.action): \(.address)"' 2>/dev/null || echo "No resource changes detected"
     
     apply:
       steps:
@@ -46,7 +46,7 @@ workflows:
         - run: |
             echo "✅ Infrastructure deployment completed successfully!"
             echo "📊 Current infrastructure state:"
-            terraform output -json || echo "No outputs available"
+            terraform output -json 2>/dev/null || echo "No outputs available"
 
 # Repository-level policies
 policies:
