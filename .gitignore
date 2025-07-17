@@ -1,0 +1,48 @@
+# Terraform configurations
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+*.tfplan
+.terraform/
+.terraform.lock.hcl
+
+# Atlantis
+atlantis.log
+atlantis.yaml.bak
+
+# AWS
+.aws/credentials
+.aws/config
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Hugo
+public/
+resources/
+.hugo_build.lock
+
+# Node modules (if using for tooling)
+node_modules/
+npm-debug.log*
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Backup files
+*.backup
+*.bak
