@@ -3,6 +3,8 @@ projects:
   - name: terraform-atlantis-workshop
     dir: terraform
     terraform_version: v1.6.0
+    repo_locks:
+      mode: on_plan
     autoplan:
       when_modified: ["*.tf", "*.tfvars", "*.tfvars.json"]
       enabled: true
@@ -54,10 +56,3 @@ workflows:
             echo "🎉 Apply completed successfully!"
             echo "📈 Infrastructure changes have been applied"
             echo "🔍 Check the Atlantis UI for detailed logs"
-
-# Global configuration
-repo_locking: true
-parallel_plan: true
-parallel_apply: false
-delete_source_branch_on_merge: false
-allowed_regexp_prefixes: ["dev/", "feature/", "hotfix/"]
