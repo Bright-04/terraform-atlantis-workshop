@@ -1,8 +1,57 @@
 version: 3
+automerge: false
+parallel_plan: true
+parallel_apply: false
+
 projects:
   - name: terraform-atlantis-workshop
     dir: terraform
     terraform_version: v1.6.0
+    workspace: default
+    
+    # Automatic planning configuration
     autoplan:
-      when_modified: ["*.tf", "*.tfvars", "*.tfvars.json"]
+      when_modified: ["*.tf", "*.tfvars", "*.tfvars.json", "*.hcl"]
       enabled: true
+    
+    # Apply requirements - enforces approval workflow
+    apply_requirements: 
+      - "approved"
+      - "mergeable"
+    
+    # Custom workflow for enhanced validation
+    workflow: workshop-approval-workflow
+
+# Define custom workflows
+workflows:
+  workshop-approval-workflow:
+    plan:
+      steps:
+        - init
+        - plan:
+            extra_args: ["-out", "workshop.tfplan"]
+        - run: |
+            echo "🔍 Plan Summary:"
+            terraform show -no-color workshop.tfplan | grep -E "Plan:|No changes"
+            echo ""
+            echo "📋 Resources to be modified:"
+            terraform show -json workshop.tfplan | jq -r '.resource_changes[]? | "\(.action): \(.address)"' || echo "No resource changes"
+    
+    apply:
+      steps:
+        - run: |
+            echo "🚀 Starting infrastructure deployment..."
+            echo "📋 Applying approved changes..."
+        - apply
+        - run: |
+            echo "✅ Infrastructure deployment completed successfully!"
+            echo "📊 Current infrastructure state:"
+            terraform output -json || echo "No outputs available"
+
+# Repository-level policies
+policies:
+  conftest_version: 0.25.0
+  policy_sets:
+    - name: workshop-policies
+      path: policies/
+      source: local
