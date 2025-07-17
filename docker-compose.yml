@@ -42,6 +42,7 @@ services:
       - ATLANTIS_REQUIRE_MERGEABLE=true
       - ATLANTIS_WRITE_GIT_CREDS=true
       - ATLANTIS_ALLOW_FORK_PRS=true
+      - ATLANTIS_ALLOWED_OVERRIDES=workflow
       
       # AWS/LocalStack Configuration
       - AWS_DEFAULT_REGION=us-east-1
