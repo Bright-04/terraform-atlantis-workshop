@@ -1,426 +1,269 @@
-# Terraform & Atlantis Infrastructure Automation Workshop
-## Enterprise-Grade AWS Environment Provisioning with GitOps
+# Terraform Atlantis Workshop
 
-### 🎯 Workshop Purpose & Definition
+## Overview
 
-This workshop teaches **Infrastructure as Code (IaC)** automation using **Terraform** and **Atlantis** to create enterprise-grade AWS environment provisioning with approval workflows, cost controls, and compliance validation.
+This workshop demonstrates **Environment Provisioning Automation** using Terraform and Atlantis with a focus on approval workflows, cost controls, and monitoring integration. The project is designed to work with both LocalStack (for cost-free development) and real AWS infrastructure.
 
-#### What You'll Build:
-- **Automated Infrastructure Provisioning** using Terraform
-- **GitOps Workflow** with Atlantis for approval processes
-- **Cost Monitoring & Control** system
-- **Compliance Validation** framework
-- **Rollback & Recovery** procedures
-- **Complete Documentation** with Hugo
+### Workshop Objectives
+- Implement automated environment provisioning with Terraform
+- Set up approval workflows using Atlantis
+- Integrate cost controls and monitoring
+- Establish compliance validation and rollback procedures
+- Create comprehensive operational documentation
 
-### 🏆 Workshop Learning Objectives
+## Technologies Used
 
-1. **Master Infrastructure as Code**
-   - Write Terraform configurations for AWS resources
-   - Implement reusable modules and best practices
-   - Manage infrastructure state and versioning
+### Core Infrastructure
+- **Terraform (v1.0+)** - Infrastructure as Code
+- **AWS Provider (~5.0)** - Cloud resources management
+- **LocalStack** - Local AWS cloud stack for development
+- **Docker & Docker Compose** - Container orchestration
 
-2. **Implement GitOps Workflows**
-   - Set up Atlantis for automated Terraform operations
-   - Create approval gates for infrastructure changes
-   - Integrate with Git-based change management
+### Development Tools
+- **PowerShell** - Automation scripts
+- **Git** - Version control
+- **VS Code** - Development environment
 
-3. **Establish Cost Controls**
-   - Implement AWS cost monitoring and budgeting
-   - Set up automated cost alerts and reporting
-   - Create cost estimation for infrastructure changes
+### Planned Integration
+- **Atlantis** - GitOps workflow automation
+- **CloudWatch** - Monitoring and alerting
+- **AWS Cost Explorer** - Cost management
+- **S3** - Terraform state backend
 
-4. **Ensure Compliance & Security**
-   - Validate infrastructure against compliance rules
-   - Implement security scanning and policies
-   - Create audit trails for all changes
+## Current Status
 
-5. **Develop Operational Excellence**
-   - Create comprehensive documentation
-   - Establish rollback and disaster recovery procedures
-   - Develop operational runbooks and troubleshooting guides
+### ✅ Completed
+- [x] **LocalStack Environment Setup**
+  - Docker Compose configuration for LocalStack
+  - Support for EC2, S3, RDS, IAM, CloudWatch, Lambda, API Gateway
+  - Local development environment ready
 
-### 🎓 Target Audience
-- DevOps Engineers
-- Cloud Architects
-- Infrastructure Engineers
-- Teams implementing GitOps for infrastructure
-- Students preparing for AWS DevOps graduation
+- [x] **Terraform Infrastructure Foundation**
+  - VPC with public/private subnets (10.0.0.0/16)
+  - Internet Gateway and route tables
+  - Security groups for web servers
+  - EC2 instance with user data
+  - S3 bucket for testing
+  - Complete variable definitions
+  - Output values for resource references
 
-### 💼 Real-World Application
-This workshop simulates enterprise environments where:
-- Multiple teams need controlled infrastructure access
-- All changes require approval and audit trails
-- Cost control and monitoring are critical
-- Compliance and security must be maintained
-- Documentation and procedures are essential
+- [x] **Dual Environment Support**
+  - LocalStack configuration for cost-free development
+  - AWS configuration for production deployment
+  - Environment-specific provider configurations
+  - Flexible deployment scripts
 
-### 🏗️ What You'll Create
-By the end of this workshop, you'll have:
-- **Production-ready Terraform infrastructure**
-- **Atlantis-powered approval workflow**
-- **Cost monitoring dashboard**
-- **Compliance validation system**
-- **Complete Hugo documentation site**
-- **Operational procedures and runbooks**
+- [x] **Project Structure**
+  - Organized terraform modules
+  - Backup configurations for different environments
+  - PowerShell deployment scripts
+  - Documentation templates
 
-## 📅 13-Day Accelerated Workshop Timeline
+### 🚧 In Progress
+- [ ] **Atlantis Integration**
+  - Atlantis server configuration
+  - Webhook setup for GitHub integration
+  - Approval workflow definitions
 
-### **Phase 1: Foundation (Days 1-2)**
-- AWS environment setup
-- Tool installation and configuration
-- Basic Terraform infrastructure deployment
+- [ ] **Monitoring Setup**
+  - CloudWatch metrics and alarms
+  - Cost monitoring dashboard
+  - Infrastructure health checks
 
-### **Phase 2: Core Infrastructure (Days 3-4)**
-- Advanced Terraform configurations
-- Module development and testing
-- State management setup
+### 📋 Planned
+- [ ] **Approval Workflows**
+  - Pull request-based infrastructure changes
+  - Multi-stage approval process
+  - Automated compliance checks
 
-### **Phase 3: Atlantis Integration (Days 5-6)**
-- Atlantis server deployment
-- GitHub/GitLab integration
-- Approval workflow implementation
+- [ ] **Cost Controls**
+  - Budget alerts and limits
+  - Resource tagging strategy
+  - Cost optimization recommendations
 
-### **Phase 4: Monitoring & Cost Controls (Days 7-8)**
-- AWS cost monitoring setup
-- CloudWatch dashboards
-- Automated alerting system
+- [ ] **Compliance & Security**
+  - Security group auditing
+  - Compliance validation rules
+  - Automated security scanning
 
-### **Phase 5: Compliance & Security (Days 9-10)**
-- AWS Config rules implementation
-- Security scanning automation
-- Compliance reporting
+- [ ] **Rollback Procedures**
+  - Automated rollback mechanisms
+  - State backup and recovery
+  - Disaster recovery procedures
 
-### **Phase 6: Documentation & Operations (Days 11-12)**
-- Hugo documentation site
-- Operational procedures
-- Rollback testing
+## Project Structure
 
-### **Phase 7: Final Integration (Day 13)**
-- End-to-end testing
-- Final demonstration
-- Workshop completion
-
-## 🚀 Step-by-Step Getting Started Guide
-
-### **Day 1-2: Foundation Setup**
-
-#### Step 1: Install Required Tools
-```powershell
-# Install Chocolatey (if not already installed)
-Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
-
-# Install Terraform
-choco install terraform
-
-# Install AWS CLI
-choco install awscli
-
-# Install Git
-choco install git
-
-# Install Hugo (for documentation)
-choco install hugo
-
-# Verify installations
-terraform version
-aws --version
-git --version
-hugo version
+```
+terraform-atlantis-workshop/
+├── docker-compose.yml              # LocalStack container configuration
+├── workshop_info.md                # Workshop requirements and objectives
+├── terraform/
+│   ├── main.tf                     # Current Terraform configuration (LocalStack)
+│   ├── variables.tf                # Variable definitions
+│   ├── outputs.tf                  # Output values
+│   ├── versions.tf                 # Provider requirements
+│   ├── terraform.tfvars            # Variable values (not in git)
+│   ├── terraform.tfvars.example    # Example variables
+│   ├── deploy.ps1                  # Deployment script
+│   ├── destroy.ps1                 # Cleanup script
+│   ├── README.md                   # Terraform-specific documentation
+│   └── backup/
+│       ├── main-aws.tf             # AWS production configuration
+│       ├── main-localstack.tf      # LocalStack development configuration
+│       └── main.tf                 # Generic backup configuration
+├── atlantis/                       # Atlantis configuration (planned)
+├── docs/                           # Documentation (planned)
+├── monitoring/                     # Monitoring configuration (planned)
+└── localstack-data/                # LocalStack persistence data
 ```
 
-#### Step 2: AWS Account Setup
-1. **Create AWS Account** (if you don't have one)
-   - Go to [AWS Console](https://aws.amazon.com/)
-   - Create new account or use existing
+## Getting Started
 
-2. **Configure Billing Alerts**
-   - Go to AWS Billing Dashboard
-   - Set up billing alerts for cost control
-   - Create budget alerts
+### Prerequisites
+- Docker Desktop installed and running
+- PowerShell (Windows) or equivalent shell
+- Git for version control
+- AWS CLI (for production deployment)
 
-3. **Create IAM User for Terraform**
-   - Go to IAM Console
-   - Create new user: `terraform-user`
-   - Attach policies: `PowerUserAccess` (or custom restrictive policy)
-   - Generate Access Key and Secret Key
+### Quick Start with LocalStack
 
-4. **Configure AWS CLI**
+1. **Clone and Navigate**
    ```powershell
-   aws configure
-   # Enter your Access Key ID
-   # Enter your Secret Access Key
-   # Enter your preferred region (e.g., us-east-1)
-   # Enter output format: json
+   git clone <repository-url>
+   cd terraform-atlantis-workshop
    ```
 
-#### Step 3: Initialize Your Workspace
+2. **Start LocalStack**
+   ```powershell
+   docker-compose up -d
+   ```
+
+3. **Deploy Infrastructure**
+   ```powershell
+   cd terraform
+   .\deploy.ps1
+   ```
+
+4. **Verify Deployment**
+   ```powershell
+   # Set LocalStack environment variables
+   $env:AWS_ACCESS_KEY_ID="test"
+   $env:AWS_SECRET_ACCESS_KEY="test"
+   $env:AWS_DEFAULT_REGION="us-east-1"
+   
+   # Check resources
+   aws --endpoint-url=http://localhost:4566 ec2 describe-instances
+   aws --endpoint-url=http://localhost:4566 s3 ls
+   ```
+
+### Production Deployment (AWS)
+
+1. **Configure AWS Credentials**
+   ```powershell
+   aws configure
+   ```
+
+2. **Switch to AWS Configuration**
+   ```powershell
+   Copy-Item backup/main-aws.tf main.tf -Force
+   ```
+
+3. **Deploy to AWS**
+   ```powershell
+   terraform init
+   terraform plan
+   terraform apply
+   ```
+
+### Configuration
+
+The project uses the following default configuration:
+- **VPC CIDR**: 10.0.0.0/16
+- **Public Subnet**: 10.0.1.0/24
+- **Private Subnet**: 10.0.2.0/24
+- **Instance Type**: t3.micro
+- **Region**: us-east-1
+
+Customize these values in `terraform.tfvars` or through environment variables.
+
+## Key Features
+
+### Cost-Effective Development
+- **LocalStack Integration**: Develop and test without AWS costs
+- **Resource Optimization**: Efficient resource allocation
+- **Environment Isolation**: Separate development and production
+
+### Infrastructure as Code
+- **Terraform Best Practices**: Modular, reusable configurations
+- **Version Control**: All infrastructure changes tracked
+- **Automated Deployment**: PowerShell scripts for consistency
+
+### Security & Compliance
+- **Security Groups**: Properly configured network access
+- **Resource Tagging**: Consistent labeling strategy
+- **Environment Separation**: Isolated development/production
+
+## Next Steps
+
+1. **Atlantis Integration**
+   - Configure Atlantis server
+   - Set up GitHub webhooks
+   - Implement approval workflows
+
+2. **Monitoring & Alerting**
+   - Deploy CloudWatch dashboards
+   - Set up cost alerts
+   - Configure health checks
+
+3. **Advanced Features**
+   - Implement Terraform modules
+   - Add automated testing
+   - Set up CI/CD pipelines
+
+4. **Documentation**
+   - Operational runbooks
+   - Troubleshooting guides
+   - Best practices documentation
+
+## Troubleshooting
+
+### Common Issues
+- **LocalStack not starting**: Check Docker Desktop is running
+- **Port conflicts**: Ensure ports 4566 and 4510-4559 are available
+- **Permission issues**: Verify AWS credentials and IAM permissions
+
+### Cleanup
 ```powershell
-# Navigate to your workshop directory
-cd "d:\IT WORKSHOP"
+# Destroy infrastructure
+.\destroy.ps1
 
-# Initialize Git repository
-git init
+# Stop LocalStack
+docker-compose down
 
-# Create initial commit
-git add .
-git commit -m "Initial workshop setup"
-
-# Create GitHub repository and push (optional but recommended)
-# git remote add origin https://github.com/yourusername/terraform-atlantis-workshop.git
-# git push -u origin main
+# Remove volumes (optional)
+docker-compose down -v
 ```
 
-### **Day 3-4: Core Terraform Infrastructure**
+## Contributing
 
-#### Step 4: Deploy Your First Infrastructure
-```powershell
-# Navigate to terraform directory
-cd terraform
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test with LocalStack
+5. Submit a pull request
 
-# Copy example variables
-Copy-Item terraform.tfvars.example terraform.tfvars
+## Author
 
-# Edit terraform.tfvars with your specific values
-# Use any text editor to modify:
-# - region (your preferred AWS region)
-# - project_name (your project name)
-# - key_pair_name (create a key pair in AWS console first)
-```
+**Nguyen Nhat Quang (Bright-04)**
+- Email: cbl.nguyennhatquang2809@gmail.com
+- Repository: terraform-atlantis-workshop
+- Program: First Cloud Journey 2025, Amazon Web Service Vietnam
+- Focus: Environment Provisioning Automation with Terraform and Atlantis
 
-#### Step 5: Deploy Infrastructure
-```powershell
-# Initialize Terraform
-terraform init
+## License
 
-# Review the plan
-terraform plan
-
-# Apply the configuration
-terraform apply
-
-# Note the outputs - you'll need them later
-terraform output
-```
-
-### **Day 5-6: Atlantis Setup**
-
-#### Step 6: Create Atlantis Configuration
-```powershell
-# Navigate to atlantis directory
-cd ..\atlantis
-
-# Create atlantis.yaml configuration file
-# (This file will be created in the next steps)
-```
-
-#### Step 7: Deploy Atlantis Server
-- Deploy Atlantis on AWS ECS or EC2
-- Configure GitHub/GitLab webhooks
-- Set up SSL certificate for HTTPS
-
-### **Day 7-8: Monitoring & Cost Controls**
-
-#### Step 8: Implement Cost Monitoring
-```powershell
-# Navigate to monitoring directory
-cd ..\monitoring
-
-# Create CloudWatch dashboards
-# Set up cost alerts
-# Implement budget monitoring
-```
-
-### **Day 9-10: Compliance & Security**
-
-#### Step 9: Security Implementation
-- Set up AWS Config rules
-- Implement security scanning with Checkov
-- Create compliance reporting
-
-### **Day 11-12: Documentation**
-
-#### Step 10: Create Hugo Documentation
-```powershell
-# Navigate to docs directory
-cd ..\docs
-
-# Initialize Hugo site
-hugo new site .
-
-# Add theme and content
-# Create documentation pages
-```
-
-### **Day 13: Final Integration**
-
-#### Step 11: End-to-End Testing
-- Test complete workflow
-- Validate all components
-- Prepare demonstration
-
-## 💰 Cost-Free Local Development with LocalStack
-
-### Why Use LocalStack?
-- **Zero AWS costs** during development and testing
-- **Fast iteration** without waiting for AWS API calls
-- **Offline development** capability
-- **Perfect for learning** and experimentation
-
-### LocalStack Setup (Alternative to AWS)
-
-#### Step 1: Install LocalStack
-```powershell
-# Install Docker Desktop first
-choco install docker-desktop
-
-# Install LocalStack CLI
-pip install localstack
-
-# Verify installation
-localstack --version
-```
-
-#### Step 2: Start LocalStack
-```powershell
-# Start LocalStack with required services
-localstack start
-
-# Or start with Docker Compose (recommended)
-# Create docker-compose.yml file (shown below)
-docker-compose up -d
-```
-
-#### Step 3: Configure Terraform for LocalStack
-```hcl
-# Add to your terraform/main.tf
-provider "aws" {
-  region                      = "us-east-1"
-  access_key                  = "test"
-  secret_key                  = "test"
-  skip_credentials_validation = true
-  skip_metadata_api_check     = true
-  skip_requesting_account_id  = true
-
-  endpoints {
-    ec2 = "http://localhost:4566"
-    s3  = "http://localhost:4566"
-    rds = "http://localhost:4566"
-    iam = "http://localhost:4566"
-  }
-}
-```
-
-### LocalStack vs AWS Workflow
-
-#### For Local Development (Days 1-6):
-1. **Use LocalStack** for initial development
-2. **Test Terraform configurations** locally
-3. **Debug and iterate** quickly
-4. **Learn without cost concerns**
-
-#### For Production Testing (Days 7-13):
-1. **Deploy to AWS** for real-world testing
-2. **Use AWS Free Tier** resources
-3. **Implement cost monitoring**
-4. **Prepare for final demonstration**
-
-## 📁 Project Structure
-```
-IT WORKSHOP/
-├── terraform/              # Terraform configurations
-│   ├── main.tf             # Main infrastructure code
-│   ├── variables.tf        # Input variables
-│   ├── outputs.tf          # Output values
-│   ├── versions.tf         # Provider versions
-│   └── terraform.tfvars    # Variable values (create from .example)
-├── atlantis/               # Atlantis configuration
-│   ├── atlantis.yaml       # Atlantis configuration
-│   └── server-config.yaml  # Server configuration
-├── monitoring/             # Monitoring setup
-│   ├── cloudwatch.tf       # CloudWatch dashboards
-│   └── cost-alerts.tf      # Cost monitoring
-├── docs/                   # Hugo documentation
-│   ├── config.yaml         # Hugo configuration
-│   └── content/            # Documentation content
-├── workshop-plan.md        # Detailed workshop plan
-├── getting-started.md      # Quick start guide
-└── readme.md              # This file
-```
-
-## 🎯 Success Criteria
-
-### Technical Deliverables:
-- [ ] **Working Terraform Infrastructure** - VPC, EC2, RDS deployed
-- [ ] **Atlantis Approval Workflow** - PRs trigger plan/apply
-- [ ] **Cost Monitoring Dashboard** - Real-time cost tracking
-- [ ] **Compliance Validation** - Automated security checks
-- [ ] **Hugo Documentation Site** - Complete project documentation
-- [ ] **Operational Procedures** - Rollback and recovery guides
-
-### Learning Outcomes:
-- [ ] **IaC Mastery** - Can write production-ready Terraform
-- [ ] **GitOps Implementation** - Understand approval workflows
-- [ ] **Cost Management** - Can implement cost controls
-- [ ] **Security & Compliance** - Can validate infrastructure
-- [ ] **Documentation Skills** - Can create technical documentation
-
-## 🛠️ Tools & Technologies Used
-
-### Core Technologies:
-- **Terraform** - Infrastructure as Code
-- **Atlantis** - GitOps for Terraform
-- **AWS** - Cloud provider
-- **Git** - Version control
-- **Hugo** - Documentation generator
-
-### AWS Services:
-- **VPC** - Virtual Private Cloud
-- **EC2** - Elastic Compute Cloud
-- **RDS** - Relational Database Service
-- **S3** - Simple Storage Service
-- **CloudWatch** - Monitoring and logging
-- **Cost Explorer** - Cost analysis
-- **Config** - Configuration compliance
-
-## 🆘 Getting Help
-
-### Resources:
-- **Workshop Plan**: `workshop-plan.md` - Detailed 13-day breakdown
-- **Getting Started**: `getting-started.md` - Quick start guide
-- **Terraform Docs**: [terraform.io](https://terraform.io)
-- **Atlantis Docs**: [runatlantis.io](https://runatlantis.io)
-- **AWS Docs**: [docs.aws.amazon.com](https://docs.aws.amazon.com)
-
-### Troubleshooting:
-- Check AWS credentials configuration
-- Verify Terraform state is not corrupted
-- Ensure proper IAM permissions
-- Check AWS service limits and quotas
-
-### Community Support:
-- Terraform Community Forum
-- AWS Community Forums
-- Stack Overflow with relevant tags
-- GitHub Issues for specific tools
-
-## 📚 Additional Learning Resources
-
-### Books:
-- "Terraform: Up & Running" by Yevgeniy Brikman
-- "AWS Well-Architected Framework" (AWS Documentation)
-- "Infrastructure as Code" by Kief Morris
-
-### Online Courses:
-- AWS Certified DevOps Engineer
-- HashiCorp Certified Terraform Associate
-- Kubernetes and DevOps courses
-
-### Hands-on Labs:
-- AWS Free Tier resources
-- Terraform tutorials and examples
-- Atlantis getting started guides
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ---
 
-**🎓 Workshop Completion**: This workshop prepares you for AWS DevOps graduation by demonstrating mastery of infrastructure automation, GitOps workflows, cost management, and operational excellence.
+*This project is part of a workshop series focusing on infrastructure automation, GitOps workflows, and cloud cost optimization.*
