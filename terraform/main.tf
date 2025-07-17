@@ -8,6 +8,7 @@ provider "aws" {
   skip_credentials_validation = true
   skip_metadata_api_check     = true
   skip_requesting_account_id  = true
+  s3_use_path_style           = true
 
   endpoints {
     ec2            = "http://localhost:4566"
@@ -173,5 +174,22 @@ resource "aws_instance" "web" {
 
   tags = {
     Name = "${var.project_name}-web-server"
+  }
+}
+
+# S3 Bucket for testing
+resource "aws_s3_bucket" "workshop" {
+  bucket = "${var.project_name}-${var.s3_bucket_suffix}"
+
+  tags = {
+    Name = "${var.project_name}-${var.s3_bucket_suffix}"
+  }
+}
+
+# S3 Bucket versioning
+resource "aws_s3_bucket_versioning" "workshop" {
+  bucket = aws_s3_bucket.workshop.id
+  versioning_configuration {
+    status = "Enabled"
   }
 }

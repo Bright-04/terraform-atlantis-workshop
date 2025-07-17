@@ -45,3 +45,9 @@ variable "key_pair_name" {
   type        = string
   default     = ""
 }
+
+variable "s3_bucket_suffix" {
+  description = "Optional suffix for S3 bucket name to ensure uniqueness"
+  type        = string
+  default     = "workshop-bucket"
+}
