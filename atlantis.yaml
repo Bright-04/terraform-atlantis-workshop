@@ -6,6 +6,7 @@ projects:
     terraform_version: v1.6.0
     
 policies:
+  conftest_version: v0.46.0
   policy_sets:
     - name: workshop-policies
       path: policies/
