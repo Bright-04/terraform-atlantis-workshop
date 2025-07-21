@@ -21,6 +21,3 @@ policies:
     - name: security-policies
       path: policies/
       source: local
-      namespaces:
-        - terraform.security
-        - terraform.cost_control
