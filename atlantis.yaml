@@ -3,10 +3,19 @@ projects:
   - name: terraform-atlantis-workshop
     dir: terraform
     terraform_version: v1.6.0
+    workflow: policy-validation
 
-# Repository-level policies
+workflows:
+  policy-validation:
+    plan:
+      steps:
+      - init
+      - plan
+      - policy_check:
+          extra_args: ["--policy", "../policies/"]
+
 policies:
-  conftest_version: 0.25.0
+  conftest_version: 0.46.0
   policy_sets:
     - name: workshop-policies
       path: policies/

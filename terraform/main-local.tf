@@ -211,3 +211,84 @@ resource "aws_s3_bucket_versioning" "workshop" {
     status = "Enabled"
   }
 }
+
+
+# === POLICY VIOLATION TEST RESOURCES ===
+# Test configuration that violates multiple policies
+# This will be added to main-local.tf to trigger policy violations
+
+# Policy Violation 1: Missing CostCenter tag (Cost Control Policy)
+resource "aws_instance" "policy_test_no_cost_tag" {
+  ami           = data.aws_ami.amazon_linux.id
+  instance_type = "t3.micro"
+  subnet_id     = aws_subnet.public.id
+  
+  vpc_security_group_ids = [aws_security_group.web.id]
+  
+  tags = {
+    Name        = "policy-test-no-cost-tag"
+    Environment = "test"
+    Project     = "terraform-atlantis-workshop"
+    # Missing: CostCenter tag - violates cost_control.rego
+  }
+}
+
+# Policy Violation 2: Expensive instance type (Cost Control Policy)
+resource "aws_instance" "policy_test_expensive" {
+  ami           = data.aws_ami.amazon_linux.id
+  instance_type = "m5.large"  # Violates cost_control.rego
+  subnet_id     = aws_subnet.public.id
+  
+  vpc_security_group_ids = [aws_security_group.web.id]
+  
+  tags = {
+    Name       = "policy-test-expensive"
+    Environment = "test"
+    Project    = "terraform-atlantis-workshop"
+    CostCenter = "workshop"
+  }
+}
+
+# Policy Violation 3: Unencrypted S3 bucket (Security Policy)
+resource "aws_s3_bucket" "policy_test_unencrypted" {
+  bucket = "terraform-atlantis-workshop-policy-test-unencrypted"
+  
+  tags = {
+    Name       = "policy-test-unencrypted"
+    Environment = "test"
+    Project    = "terraform-atlantis-workshop"
+    CostCenter = "workshop"
+  }
+  
+  # Missing: server_side_encryption_configuration - violates terraform_security.rego
+}
+
+# Policy Violation 4: Overly permissive security group (Security Policy)
+resource "aws_security_group" "policy_test_permissive" {
+  name_prefix = "policy-test-permissive-"
+  vpc_id      = aws_vpc.main.id
+  description = "Test security group with policy violations"
+
+  # Violates terraform_security.rego - all ports open
+  ingress {
+    description = "All ports - BAD POLICY VIOLATION!"
+    from_port   = 0
+    to_port     = 65535
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name       = "policy-test-permissive-sg"
+    Environment = "test"
+    Project    = "terraform-atlantis-workshop"
+    CostCenter = "workshop"
+  }
+}
