@@ -46,7 +46,7 @@ services:
       - ATLANTIS_ALLOW_FORK_PRS=true
       - ATLANTIS_ALLOWED_OVERRIDES=workflow,apply_requirements,delete_source_branch_on_merge
       - DEFAULT_CONFTEST_VERSION=0.46.0
-      - ATLANTIS_CONFIG=/atlantis/server-config.yaml
+      - ATLANTIS_REPO_CONFIG=/atlantis/server-config.yaml
       
       # AWS/LocalStack Configuration
       - AWS_DEFAULT_REGION=us-east-1
