@@ -13,7 +13,7 @@ workflows:
       - init
       - plan
       - policy_check:
-          extra_args: ["--namespace", "terraform.security", "--namespace", "terraform.cost_control"]
+          extra_args: ["--policy", "/policies"]
 
 policies:
   conftest_version: 0.46.0
