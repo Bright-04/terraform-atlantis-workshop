@@ -12,6 +12,7 @@ atlantis.log
 atlantis.yaml.bak
 atlantis/plugin-cache/
 atlantis/repos/
+atlantis/bin/
 
 # AWS
 .aws/credentials
