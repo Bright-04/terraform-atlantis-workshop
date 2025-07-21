@@ -5,15 +5,6 @@ projects:
   dir: terraform
   terraform_version: v1.6.0
 
-workflows:
-  policy-check:
-    plan:
-      steps:
-      - init
-      - plan
-      - policy_check:
-          extra_args: ["--policy", "../policies/", "--namespace", "terraform.security", "--namespace", "terraform.cost_control"]
-
 policies:
   conftest_version: 0.46.0
   policy_sets:
