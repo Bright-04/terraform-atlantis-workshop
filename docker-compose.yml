@@ -60,6 +60,7 @@ services:
       - ./atlantis:/atlantis
       - ./terraform:/terraform
       - ./atlantis.yaml:/atlantis.yaml
+      - ./server-config.yaml:/atlantis/server-config.yaml
       - ./policies:/policies
     depends_on:
       - localstack
