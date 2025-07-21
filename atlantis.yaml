@@ -4,8 +4,9 @@ projects:
   - name: terraform-atlantis-workshop
     dir: terraform
     terraform_version: v1.6.0
-    policies:
-      policy_sets:
-        - name: workshop-policies
-          path: policies/
-          source: local
+    
+policies:
+  policy_sets:
+    - name: workshop-policies
+      path: policies/
+      source: local
