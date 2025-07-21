@@ -1,0 +1,18 @@
+{
+  "resource_changes": [
+    {
+      "type": "aws_instance",
+      "address": "aws_instance.test",
+      "change": {
+        "actions": ["create"],
+        "after": {
+          "instance_type": "m5.large",
+          "tags": {
+            "Environment": "test",
+            "Project": "terraform-atlantis-workshop"
+          }
+        }
+      }
+    }
+  ]
+}

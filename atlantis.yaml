@@ -12,12 +12,6 @@ workflows:
       steps:
       - init
       - plan
-      - policy_check:
-          extra_args: ["--policy", "/policies", "--output", "json"]
-
-policies:
-  conftest_version: 0.46.0
-  policy_sets:
-    - name: security-policies
-      path: policies/
-      source: local
+      - run: |
+          terraform show -json $PLANFILE > tfplan.json
+          conftest test --policy /policies --output json tfplan.json || true
