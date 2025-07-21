@@ -18,7 +18,9 @@ services:
 
   atlantis:
     container_name: atlantis_workshop
-    image: ghcr.io/runatlantis/atlantis:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
     ports:
       - "4141:4141"
     env_file:
