@@ -21,17 +21,10 @@ provider "aws" {
   skip_requesting_account_id  = true
   s3_use_path_style           = true
 
-  endpoints {
-    ec2            = "http://localhost:4566"
-    s3             = "http://localhost:4566"
-    rds            = "http://localhost:4566"
-    iam            = "http://localhost:4566"
-    cloudwatch     = "http://localhost:4566"
-    logs           = "http://localhost:4566"
-    sts            = "http://localhost:4566"
-    lambda         = "http://localhost:4566"
-    apigateway     = "http://localhost:4566"
-  }
+  # Endpoints will be set via environment variables:
+  # AWS_ENDPOINT_URL_EC2, AWS_ENDPOINT_URL_S3, etc.
+  # This allows the same config to work locally (localhost:4566) 
+  # and in Atlantis container (localstack:4566)
 
   default_tags {
     tags = {
