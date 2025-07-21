@@ -4,10 +4,23 @@ projects:
   - name: terraform-atlantis-workshop
     dir: terraform
     terraform_version: v1.6.0
-    
+    workflow: policy-check
+
+workflows:
+  policy-check:
+    plan:
+      steps:
+      - init
+      - plan
+      - policy_check:
+          extra_args: ["--policy", "../policies/", "--namespace", "terraform.security", "--namespace", "terraform.cost_control"]
+
 policies:
-  conftest_version: v0.46.0
+  conftest_version: 0.46.0
   policy_sets:
-    - name: workshop-policies
+    - name: security-policies
       path: policies/
       source: local
+      namespaces:
+        - terraform.security
+        - terraform.cost_control

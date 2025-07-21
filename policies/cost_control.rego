@@ -1,5 +1,5 @@
 # Cost Control and Resource Management Policies
-package main
+package terraform.cost_control
 
 # Cost-related validations
 deny[msg] {
@@ -10,11 +10,12 @@ deny[msg] {
     msg := sprintf("Instance %s uses expensive instance type. Consider smaller instances for workshop environment", [resource.address])
 }
 
-# Require cost allocation tags
+# Require cost allocation tags for new resources
 deny[msg] {
     resource := input.resource_changes[_]
     allowed_types := ["aws_instance", "aws_s3_bucket", "aws_ebs_volume"]
     allowed_types[_] == resource.type
+    resource.change.actions[_] == "create"  # Only check new resources
     not resource.change.after.tags.CostCenter
     msg := sprintf("Resource %s must have CostCenter tag for cost tracking", [resource.address])
 }

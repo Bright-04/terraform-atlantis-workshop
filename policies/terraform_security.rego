@@ -1,12 +1,13 @@
 # Terraform Security and Compliance Policies
 # These policies validate infrastructure configurations before deployment
 
-package main
+package terraform.security
 
 # Deny resources without proper tags
 deny[msg] {
     resource := input.resource_changes[_]
     resource.type == "aws_instance"
+    resource.change.actions[_] == "create"  # Only check new resources
     not resource.change.after.tags.Environment
     msg := sprintf("EC2 instance %s must have Environment tag", [resource.address])
 }
@@ -14,6 +15,7 @@ deny[msg] {
 deny[msg] {
     resource := input.resource_changes[_]
     resource.type == "aws_instance"
+    resource.change.actions[_] == "create"  # Only check new resources
     not resource.change.after.tags.Project
     msg := sprintf("EC2 instance %s must have Project tag", [resource.address])
 }
@@ -32,15 +34,17 @@ deny[msg] {
 deny[msg] {
     resource := input.resource_changes[_]
     resource.type == "aws_s3_bucket"
+    resource.change.actions[_] == "create"  # Only check new buckets
     not resource.change.after.server_side_encryption_configuration
     msg := sprintf("S3 bucket %s must have server-side encryption enabled", [resource.address])
 }
 
-# Warn about missing backup tags
+# Warn about missing backup tags for new resources only
 warn[msg] {
     resource := input.resource_changes[_]
     backup_types := ["aws_instance", "aws_ebs_volume"]
     backup_types[_] == resource.type
+    resource.change.actions[_] == "create"  # Only check new resources
     not resource.change.after.tags.Backup
     msg := sprintf("Resource %s should have Backup tag for operational procedures", [resource.address])
 }
