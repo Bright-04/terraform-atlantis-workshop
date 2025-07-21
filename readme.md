@@ -224,7 +224,7 @@ The infrastructure is currently running on **LocalStack** (AWS simulation) with 
    curl "http://localhost:4566/_localstack/health"
    ```
 
-### Deploy to LocalStack (Already Done)
+### Deploy to LocalStack
 
 Your infrastructure is already deployed! But to recreate it:
 
