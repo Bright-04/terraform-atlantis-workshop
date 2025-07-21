@@ -1,4 +1,4 @@
-# Test Case: Expensive instance type (should violate cost_control.rego) - SUCCESS TEST
+# Test Case: Expensive instance type (should violate cost_control.rego) - v0.27.2 TEST
 resource "aws_instance" "test_expensive" {
   ami           = data.aws_ami.amazon_linux.id
   instance_type = "m5.large"  # This should trigger cost control policy

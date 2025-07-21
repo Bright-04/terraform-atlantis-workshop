@@ -1,4 +1,4 @@
-FROM ghcr.io/runatlantis/atlantis:latest
+FROM ghcr.io/runatlantis/atlantis:v0.27.2
 
 USER root
 RUN wget -O /tmp/conftest.tar.gz https://github.com/open-policy-agent/conftest/releases/download/v0.46.0/conftest_0.46.0_Linux_x86_64.tar.gz \
