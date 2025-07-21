@@ -1,10 +1,11 @@
 
 version: 3
 projects:
-  - name: terraform-atlantis-workshop
-    dir: terraform
-    terraform_version: v1.6.0
-    workflow: policy-check
+- name: terraform-atlantis-workshop
+  dir: terraform
+  terraform_version: v1.6.0
+  workflow: policy-check
+  apply_requirements: [approved]
 
 workflows:
   policy-check:
