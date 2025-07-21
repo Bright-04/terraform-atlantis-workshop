@@ -13,7 +13,7 @@ terraform {
 
 # AWS Provider configuration for LocalStack (local development)
 provider "aws" {
-  region                      = var.aws_region
+  region                      = var.region
   access_key                  = "test"
   secret_key                  = "test"
   skip_credentials_validation = true
