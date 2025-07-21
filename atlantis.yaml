@@ -8,5 +8,5 @@ policies:
   conftest_version: 0.46.0
   policy_sets:
     - name: workshop-policies
-      path: policies/
+      path: ../policies/
       source: local
