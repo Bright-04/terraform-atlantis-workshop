@@ -10,5 +10,3 @@ repos:
   allow_custom_workflows: true
   plan_requirements: []
   apply_requirements: []
-  plan_requirements: []
-  apply_requirements: []
