@@ -41,9 +41,8 @@ services:
       - ATLANTIS_DISABLE_APPLY_ALL=true
       - ATLANTIS_WRITE_GIT_CREDS=true
       - ATLANTIS_ALLOW_FORK_PRS=true
-      - ATLANTIS_REPO_CONFIG_JSON={"repos":[{"id":"/.*/", "allowed_overrides":["workflow"], "allow_custom_workflows":true, "plan_requirements":[], "apply_requirements":[]}]}
-      - DEFAULT_CONFTEST_VERSION=0.46.0
       - ATLANTIS_REPO_CONFIG=/atlantis/server-config.yaml
+      - DEFAULT_CONFTEST_VERSION=0.46.0
       
       # AWS/LocalStack Configuration
       - AWS_DEFAULT_REGION=us-east-1
