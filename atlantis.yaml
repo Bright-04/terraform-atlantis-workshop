@@ -10,5 +10,3 @@ policies:
     - name: workshop-policies
       path: policies/
       source: local
-      path: policies/
-      source: local
