@@ -46,6 +46,7 @@ services:
             - ./terraform:/terraform
             - ./atlantis.yaml:/atlantis.yaml
             - ./policies:/policies
+            - ./server-atlantis.yaml:/etc/atlantis/repos.yaml
         depends_on:
             - localstack
         networks:

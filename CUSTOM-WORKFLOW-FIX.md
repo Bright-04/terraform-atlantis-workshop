@@ -17,19 +17,40 @@ server-side config needs 'allow_custom_workflows: true'
 
 ### **Solution Applied:**
 
-1. **Enhanced Docker Compose Configuration:**
+1. **Verified .env File Configuration:**
+   The `.env` file already contained the correct setting:
 
-    ```yaml
-    environment:
-        - ATLANTIS_ALLOWED_OVERRIDES=workflow,apply_requirements,delete_source_branch_on_merge
-        - ATLANTIS_ENABLE_POLICY_CHECKS=true
-        - ATLANTIS_ALLOW_CUSTOM_WORKFLOWS=true
-        - ATLANTIS_REQUIRE_APPROVAL=true
-        - ATLANTIS_REQUIRE_MERGEABLE=true
-        - DEFAULT_CONFTEST_VERSION=0.46.0
+    ```
+    ATLANTIS_ALLOW_CUSTOM_WORKFLOWS=true
     ```
 
-2. **Restored Complete Workflow Configuration:**
+2. **Created Server-Side Configuration:**
+   Created `server-atlantis.yaml` with explicit repository configuration:
+
+    ```yaml
+    repos:
+        - id: github.com/Bright-04/terraform-atlantis-workshop
+          allow_custom_workflows: true
+          allowed_overrides:
+              - workflow
+              - apply_requirements
+              - delete_source_branch_on_merge
+    ```
+
+3. **Updated Docker Compose:**
+   Mounted the server-side configuration:
+
+    ```yaml
+    volumes:
+        - ./server-atlantis.yaml:/etc/atlantis/repos.yaml
+    ```
+
+4. **Container Restart:**
+
+    - Stopped and restarted Atlantis container to load both environment variables and server-side config
+    - Verified both configurations are properly loaded
+
+5. **Restored Complete Workflow Configuration:**
 
     ```yaml
     workflows:
@@ -49,7 +70,7 @@ server-side config needs 'allow_custom_workflows: true'
                     - apply
     ```
 
-3. **Container Restart:**
+6. **Container Restart:**
     - Stopped and restarted Atlantis container to pick up new configuration
     - Verified no configuration errors in logs
 

@@ -1,0 +1,8 @@
+# Server-side Atlantis configuration
+repos:
+    - id: github.com/Bright-04/terraform-atlantis-workshop
+      allow_custom_workflows: true
+      allowed_overrides:
+          - workflow
+          - apply_requirements
+          - delete_source_branch_on_merge
