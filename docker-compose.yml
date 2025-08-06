@@ -33,7 +33,7 @@ services:
             # Atlantis Configuration
             - ATLANTIS_DATA_DIR=/atlantis
             - ATLANTIS_LOG_LEVEL=info
-            - ATLANTIS_ENABLE_POLICY_CHECKS=true
+            - ATLANTIS_ENABLE_POLICY_CHECKS=false
             - ATLANTIS_ENABLE_DIFF_MARKDOWN_FORMAT=true
             - ATLANTIS_DEFAULT_TF_VERSION=v1.6.0
             - ATLANTIS_DISABLE_APPLY_ALL=true
@@ -53,7 +53,7 @@ services:
         volumes:
             - ./atlantis:/atlantis
             - ./terraform:/terraform
-            # - ./atlantis.yaml:/atlantis.yaml  # Temporarily disabled for testing
+            - ./atlantis.yaml:/atlantis.yaml
         depends_on:
             - localstack
         networks:

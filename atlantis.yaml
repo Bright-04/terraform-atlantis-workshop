@@ -1,0 +1,19 @@
+version: 3
+projects:
+    - name: terraform-atlantis-workshop
+      dir: terraform
+      terraform_version: v1.6.0
+      workflow: workshop-workflow
+
+workflows:
+    workshop-workflow:
+        plan:
+            steps:
+                - env:
+                      name: TF_IN_AUTOMATION
+                      value: "true"
+                - init
+                - plan
+        apply:
+            steps:
+                - apply
