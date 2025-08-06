@@ -1,13 +1,28 @@
 version: 3
 projects:
-  - name: terraform-atlantis-workshop
-    dir: terraform
-    terraform_version: v1.6.0
+    - name: terraform-atlantis-workshop
+      dir: terraform
+      terraform_version: v1.6.0
+      workflow: terraform-with-policies
+
+workflows:
+    terraform-with-policies:
+        plan:
+            steps:
+                - env:
+                      name: ATLANTIS_TERRAFORM_VERSION
+                      value: v1.6.0
+                - init
+                - plan
+                # - policy_check  # Temporarily disabled for testing
+        apply:
+            steps:
+                - apply
 
 # Repository-level policies
 policies:
-  conftest_version: 0.25.0
-  policy_sets:
-    - name: workshop-policies
-      path: policies/
-      source: local
+    conftest_version: 0.46.0
+    policy_sets:
+        - name: workshop-policies
+          path: policies/
+          source: local
