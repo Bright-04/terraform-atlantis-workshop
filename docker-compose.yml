@@ -23,6 +23,7 @@ services:
             dockerfile: Dockerfile.atlantis
         ports:
             - "4141:4141"
+        command: ["atlantis", "server", "--repo-config", "/etc/atlantis/repos.yaml"]
         env_file:
             - .env
         environment:
@@ -40,6 +41,7 @@ services:
             - ATLANTIS_ALLOW_CUSTOM_WORKFLOWS=true
             - ATLANTIS_REQUIRE_APPROVAL=true
             - ATLANTIS_REQUIRE_MERGEABLE=true
+            - ATLANTIS_REPO_CONFIG=/etc/atlantis/repos.yaml
             - DEFAULT_CONFTEST_VERSION=0.46.0
         volumes:
             - ./atlantis:/atlantis
