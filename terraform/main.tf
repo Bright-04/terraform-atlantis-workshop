@@ -213,3 +213,59 @@ resource "aws_s3_bucket_versioning" "workshop" {
     status = "Enabled"
   }
 }
+
+# Test EC2 instance with policy violations
+resource "aws_instance" "policy_test" {
+  ami                    = data.aws_ami.amazon_linux.id
+  instance_type          = "m5.large"  # This should trigger cost control policy
+  subnet_id              = aws_subnet.public.id
+  vpc_security_group_ids = [aws_security_group.policy_test.id]
+
+  tags = {
+    Name = "test-instance-no-required-tags"
+    # Missing Environment, Project, CostCenter tags - should trigger policies
+  }
+}
+
+# Security group with overly permissive rules
+resource "aws_security_group" "policy_test" {
+  name        = "policy-test-sg"
+  description = "Security group that should trigger policy violations"
+  vpc_id      = aws_vpc.main.id
+
+  ingress {
+    description = "All ports open - policy violation"
+    from_port   = 0
+    to_port     = 65535
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = "policy-test-sg"
+  }
+}
+
+# S3 bucket without encryption - policy violation  
+resource "aws_s3_bucket" "unencrypted_test" {
+  bucket = "test-unencrypted-bucket-${random_string.bucket_suffix.result}"
+
+  tags = {
+    Name = "unencrypted-test-bucket"
+    # Missing CostCenter tag
+  }
+}
+
+# Random string for bucket suffix
+resource "random_string" "bucket_suffix" {
+  length  = 8
+  special = false
+  upper   = false
+}
