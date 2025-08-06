@@ -3,10 +3,10 @@ projects:
     - name: terraform-atlantis-workshop
       dir: terraform
       terraform_version: v1.6.0
-      workflow: workshop-workflow
+      apply_requirements: [approved]
 
 workflows:
-    workshop-workflow:
+    default:
         plan:
             steps:
                 - env:
@@ -20,3 +20,9 @@ workflows:
         apply:
             steps:
                 - apply
+
+policies:
+    policy_sets:
+        - name: cost_and_security
+          path: policies/
+          source: local
