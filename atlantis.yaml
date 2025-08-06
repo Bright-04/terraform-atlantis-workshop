@@ -3,7 +3,7 @@ projects:
     - name: terraform-atlantis-workshop
       dir: terraform
       terraform_version: v1.6.0
-      apply_requirements: [approved]
+      # Remove apply_requirements from here since ATLANTIS_REQUIRE_APPROVAL=true handles this
 
 workflows:
     default:
