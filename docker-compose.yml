@@ -37,6 +37,7 @@ services:
             # Atlantis Configuration
             - ATLANTIS_ALLOWED_OVERRIDES=workflow,apply_requirements,delete_source_branch_on_merge
             - ATLANTIS_ENABLE_POLICY_CHECKS=true
+            - ATLANTIS_ALLOW_CUSTOM_WORKFLOWS=true
             - DEFAULT_CONFTEST_VERSION=0.46.0
         volumes:
             - ./atlantis:/atlantis
