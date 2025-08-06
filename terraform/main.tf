@@ -190,7 +190,7 @@ resource "aws_instance" "web" {
     Name        = "${var.project_name}-web-server"
     Environment = var.environment
     Owner       = "workshop-participant"
-    TestTag     = "atlantis-workflow-test"
+    TestTag     = "atlantis-workflow-complete"
     Timestamp   = formatdate("YYYY-MM-DD-hhmm", timestamp())
     CostCenter  = "workshop-training"
   }
