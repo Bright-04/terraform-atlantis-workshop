@@ -21,15 +21,14 @@ services:
         image: ghcr.io/runatlantis/atlantis:latest
         ports:
             - "4141:4141"
-        env_file:
-            - .env
         environment:
-            # GitHub Integration - Using environment variables
-            - ATLANTIS_REPO_ALLOWLIST=${ATLANTIS_REPO_ALLOWLIST}
-            - ATLANTIS_ATLANTIS_URL=${ATLANTIS_ATLANTIS_URL}
-            - ATLANTIS_GH_USER=${ATLANTIS_GH_USER}
-            - ATLANTIS_GH_TOKEN=${ATLANTIS_GH_TOKEN}
-            - ATLANTIS_GH_WEBHOOK_SECRET=${ATLANTIS_GH_WEBHOOK_SECRET}
+            # GitHub Integration - Hardcoded for testing
+            - ATLANTIS_REPO_ALLOWLIST=github.com/Bright-04/terraform-atlantis-workshop
+            - ATLANTIS_ATLANTIS_URL=https://2348dd76ebc7.ngrok-free.app/
+            - ATLANTIS_GH_USER=Bright-04
+            - ATLANTIS_GH_TOKEN=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
+            - ATLANTIS_GH_WEBHOOK_SECRET=secret
+            - ATLANTIS_ALLOWED_OVERRIDES=workflow,apply_requirements,delete_source_branch_on_merge
 
             # Atlantis Configuration
             - ATLANTIS_DATA_DIR=/atlantis
@@ -42,7 +41,6 @@ services:
             - ATLANTIS_REQUIRE_MERGEABLE=true
             - ATLANTIS_WRITE_GIT_CREDS=true
             - ATLANTIS_ALLOW_FORK_PRS=true
-            - ATLANTIS_ALLOWED_OVERRIDES=workflow,apply_requirements,delete_source_branch_on_merge
 
             # AWS/LocalStack Configuration
             - AWS_DEFAULT_REGION=us-east-1
@@ -55,7 +53,7 @@ services:
         volumes:
             - ./atlantis:/atlantis
             - ./terraform:/terraform
-            - ./atlantis.yaml:/atlantis.yaml
+            # - ./atlantis.yaml:/atlantis.yaml  # Temporarily disabled for testing
         depends_on:
             - localstack
         networks:
