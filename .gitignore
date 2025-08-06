@@ -1,4 +1,4 @@
-# Terraform configurations
+# Terraform State and Configuration
 *.tfstate
 *.tfstate.*
 *.tfvars
@@ -6,59 +6,66 @@
 *.tfplan
 .terraform/
 .terraform.lock.hcl
+terraform.tfstate.d/
 
-# Atlantis
+# Atlantis Data and Cache
 atlantis.log
 atlantis.yaml.bak
+atlantis/
 atlantis/plugin-cache/
 atlantis/repos/
+atlantis/bin/
+atlantis.db
 
-# AWS
+# AWS Configuration
 .aws/credentials
 .aws/config
 
-# IDE
+# Environment Variables (Security Critical)
+.env
+.env.local
+.env.*.local
+.envrc
+
+# LocalStack Data
+localstack-data/
+.localstack/
+localstack/
+
+# IDE and Editor Files
 .vscode/
 .idea/
 *.swp
 *.swo
+*~
 
-# OS
+# OS Generated Files
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
 
 # Logs
 *.log
 logs/
-
-# Hugo
-public/
-resources/
-.hugo_build.lock
-
-# Node modules (if using for tooling)
-node_modules/
 npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
-# Environment variables
-.env
-.env.local
-.env.*.local
-
-# Backup files
+# Backup Files
 *.backup
 *.bak
 
-# LocalStack
-localstack-data/
-.localstack/
-
-# Temporary files
+# Temporary Files
 *.tmp
 *.temp
+.cache/
 
-# Archive files
+# Archive Files
 *.zip
 *.tar
 *.tar.gz
-atlantis/
+*.rar
