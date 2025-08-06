@@ -14,7 +14,7 @@ workflows:
                       value: v1.6.0
                 - init
                 - plan
-                # - policy_check  # Temporarily disabled for testing
+                - policy_check # Re-enabled after fixing CostCenter tags
         apply:
             steps:
                 - apply
