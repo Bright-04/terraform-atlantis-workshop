@@ -1,0 +1,116 @@
+{
+	"format_version": "1.1",
+	"terraform_version": "1.6.0",
+	"planned_values": {
+		"root_module": {
+			"resources": [
+				{
+					"address": "aws_instance.test_violation",
+					"mode": "managed",
+					"type": "aws_instance",
+					"name": "test_violation",
+					"provider_name": "registry.terraform.io/hashicorp/aws",
+					"schema_version": 1,
+					"values": {
+						"instance_type": "m5.large",
+						"tags": {
+							"Name": "test-instance"
+						}
+					}
+				},
+				{
+					"address": "aws_s3_bucket.test_violation",
+					"mode": "managed",
+					"type": "aws_s3_bucket",
+					"name": "test_violation",
+					"provider_name": "registry.terraform.io/hashicorp/aws",
+					"schema_version": 0,
+					"values": {
+						"bucket": "test-bucket-name",
+						"tags": {
+							"Name": "test-bucket"
+						}
+					}
+				},
+				{
+					"address": "aws_security_group.test_violation",
+					"mode": "managed",
+					"type": "aws_security_group",
+					"name": "test_violation",
+					"provider_name": "registry.terraform.io/hashicorp/aws",
+					"schema_version": 1,
+					"values": {
+						"ingress": [
+							{
+								"from_port": 0,
+								"to_port": 65535,
+								"protocol": "tcp",
+								"cidr_blocks": ["0.0.0.0/0"]
+							}
+						]
+					}
+				}
+			]
+		}
+	},
+	"resource_changes": [
+		{
+			"address": "aws_instance.test_violation",
+			"module_address": null,
+			"mode": "managed",
+			"type": "aws_instance",
+			"name": "test_violation",
+			"provider_name": "registry.terraform.io/hashicorp/aws",
+			"change": {
+				"actions": ["create"],
+				"before": null,
+				"after": {
+					"instance_type": "m5.large",
+					"tags": {
+						"Name": "test-instance"
+					}
+				}
+			}
+		},
+		{
+			"address": "aws_s3_bucket.test_violation",
+			"module_address": null,
+			"mode": "managed",
+			"type": "aws_s3_bucket",
+			"name": "test_violation",
+			"provider_name": "registry.terraform.io/hashicorp/aws",
+			"change": {
+				"actions": ["create"],
+				"before": null,
+				"after": {
+					"bucket": "test-bucket-name",
+					"tags": {
+						"Name": "test-bucket"
+					}
+				}
+			}
+		},
+		{
+			"address": "aws_security_group.test_violation",
+			"module_address": null,
+			"mode": "managed",
+			"type": "aws_security_group",
+			"name": "test_violation",
+			"provider_name": "registry.terraform.io/hashicorp/aws",
+			"change": {
+				"actions": ["create"],
+				"before": null,
+				"after": {
+					"ingress": [
+						{
+							"from_port": 0,
+							"to_port": 65535,
+							"protocol": "tcp",
+							"cidr_blocks": ["0.0.0.0/0"]
+						}
+					]
+				}
+			}
+		}
+	]
+}
