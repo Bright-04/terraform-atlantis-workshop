@@ -21,28 +21,10 @@ services:
         image: ghcr.io/runatlantis/atlantis:latest
         ports:
             - "4141:4141"
+        env_file:
+            - .env
         environment:
-            # GitHub Integration - Hardcoded for testing
-            - ATLANTIS_REPO_ALLOWLIST=github.com/Bright-04/terraform-atlantis-workshop
-            - ATLANTIS_ATLANTIS_URL=https://2348dd76ebc7.ngrok-free.app/
-            - ATLANTIS_GH_USER=Bright-04
-            - ATLANTIS_GH_TOKEN=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
-            - ATLANTIS_GH_WEBHOOK_SECRET=secret
-            - ATLANTIS_ALLOWED_OVERRIDES=workflow,apply_requirements,delete_source_branch_on_merge
-
-            # Atlantis Configuration
-            - ATLANTIS_DATA_DIR=/atlantis
-            - ATLANTIS_LOG_LEVEL=info
-            - ATLANTIS_ENABLE_POLICY_CHECKS=false
-            - ATLANTIS_ENABLE_DIFF_MARKDOWN_FORMAT=true
-            - ATLANTIS_DEFAULT_TF_VERSION=v1.6.0
-            - ATLANTIS_DISABLE_APPLY_ALL=true
-            - ATLANTIS_REQUIRE_APPROVAL=true
-            - ATLANTIS_REQUIRE_MERGEABLE=true
-            - ATLANTIS_WRITE_GIT_CREDS=true
-            - ATLANTIS_ALLOW_FORK_PRS=true
-
-            # AWS/LocalStack Configuration
+            # AWS/LocalStack Configuration - Override for container networking
             - AWS_DEFAULT_REGION=us-east-1
             - AWS_ACCESS_KEY_ID=test
             - AWS_SECRET_ACCESS_KEY=test
