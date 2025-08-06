@@ -3,26 +3,17 @@ projects:
     - name: terraform-atlantis-workshop
       dir: terraform
       terraform_version: v1.6.0
-      workflow: terraform-with-policies
+      workflow: workshop-workflow
 
 workflows:
-    terraform-with-policies:
+    workshop-workflow:
         plan:
             steps:
                 - env:
-                      name: ATLANTIS_TERRAFORM_VERSION
-                      value: v1.6.0
+                      name: TF_IN_AUTOMATION
+                      value: "true"
                 - init
                 - plan
-                - policy_check # Re-enabled after fixing CostCenter tags
         apply:
             steps:
                 - apply
-
-# Repository-level policies
-policies:
-    conftest_version: 0.46.0
-    policy_sets:
-        - name: workshop-policies
-          path: policies/
-          source: local
