@@ -2,11 +2,15 @@
 # This file uses localhost endpoints for direct development work
 
 terraform {
-  required_version = "1.6.0"
+  required_version = ">= 1.6.0"
   required_providers {
     aws = {
       source  = "hashicorp/aws"
       version = "~> 5.100"
+    }
+    null = {
+      source  = "hashicorp/null"
+      version = "~> 3.2"
     }
   }
 }
@@ -212,4 +216,67 @@ resource "aws_s3_bucket_versioning" "workshop" {
   versioning_configuration {
     status = "Enabled"
   }
+}
+
+# Test EC2 instance with policy violations
+resource "aws_instance" "policy_test" {
+  ami                    = data.aws_ami.amazon_linux.id
+  instance_type          = "t3.small"  # Fixed: Changed from m5.large to t3.small
+  subnet_id              = aws_subnet.public.id
+  vpc_security_group_ids = [aws_security_group.policy_test.id]
+
+  tags = {
+    Name        = "test-instance-no-required-tags"
+    Environment = "workshop"
+    Project     = "terraform-atlantis-workshop"
+    CostCenter  = "workshop-training"
+  }
+}
+
+# Security group with overly permissive rules
+resource "aws_security_group" "policy_test" {
+  name        = "policy-test-sg"
+  description = "Security group that should trigger policy violations"
+  vpc_id      = aws_vpc.main.id
+
+  ingress {
+    description = "SSH access only"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["10.0.0.0/16"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name        = "policy-test-sg"
+    Environment = "workshop"
+    Project     = "terraform-atlantis-workshop"
+    CostCenter  = "workshop-training"
+  }
+}
+
+# S3 bucket without encryption - policy violation  
+resource "aws_s3_bucket" "unencrypted_test" {
+  bucket = "terraform-atlantis-workshop-unencrypted-${random_string.bucket_suffix.result}"
+
+  tags = {
+    Name        = "unencrypted-test-bucket"
+    Environment = "workshop"
+    Project     = "terraform-atlantis-workshop"
+    CostCenter  = "workshop-training"
+  }
+}
+
+# Random string for bucket suffix
+resource "random_string" "bucket_suffix" {
+  length  = 8
+  special = false
+  upper   = false
 }

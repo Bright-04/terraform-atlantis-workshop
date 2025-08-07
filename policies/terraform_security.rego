@@ -3,17 +3,15 @@
 
 package terraform.security
 
-import rego.v1
-
 # Deny resources without proper tags
-deny contains msg if {
+deny[msg] {
     resource := input.resource_changes[_]
     resource.type == "aws_instance"
     not resource.change.after.tags.Environment
     msg := sprintf("EC2 instance %s must have Environment tag", [resource.address])
 }
 
-deny contains msg if {
+deny[msg] {
     resource := input.resource_changes[_]
     resource.type == "aws_instance"
     not resource.change.after.tags.Project
@@ -21,7 +19,7 @@ deny contains msg if {
 }
 
 # Deny security groups with overly permissive rules
-deny contains msg if {
+deny[msg] {
     resource := input.resource_changes[_]
     resource.type == "aws_security_group"
     ingress := resource.change.after.ingress[_]
@@ -31,25 +29,35 @@ deny contains msg if {
 }
 
 # Deny unencrypted S3 buckets
-deny contains msg if {
+deny[msg] {
     resource := input.resource_changes[_]
     resource.type == "aws_s3_bucket"
     not resource.change.after.server_side_encryption_configuration
     msg := sprintf("S3 bucket %s must have server-side encryption enabled", [resource.address])
 }
 
-# Warn about missing backup tags
-warn contains msg if {
+# Deny instances without backup tags (converted from warn to deny for v0.25.0 compatibility)
+deny[msg] {
     resource := input.resource_changes[_]
-    resource.type in ["aws_instance", "aws_ebs_volume"]
+    resource.type == "aws_instance"
+    not resource.change.after.tags.Backup
+    msg := sprintf("Resource %s should have Backup tag for operational procedures", [resource.address])
+}
+
+# Deny EBS volumes without backup tags (converted from warn to deny for v0.25.0 compatibility)
+deny[msg] {
+    resource := input.resource_changes[_]
+    resource.type == "aws_ebs_volume"
     not resource.change.after.tags.Backup
     msg := sprintf("Resource %s should have Backup tag for operational procedures", [resource.address])
 }
 
 # Validate instance types (cost control)
-deny contains msg if {
+deny[msg] {
     resource := input.resource_changes[_]
     resource.type == "aws_instance"
-    not resource.change.after.instance_type in ["t3.micro", "t3.small", "t3.medium"]
+    resource.change.after.instance_type != "t3.micro"
+    resource.change.after.instance_type != "t3.small"
+    resource.change.after.instance_type != "t3.medium"
     msg := sprintf("Instance %s uses disallowed instance type. Only t3.micro, t3.small, t3.medium are permitted", [resource.address])
 }

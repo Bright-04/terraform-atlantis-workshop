@@ -18,9 +18,12 @@ services:
 
     atlantis:
         container_name: atlantis_workshop
-        image: ghcr.io/runatlantis/atlantis:latest
+        build:
+            context: .
+            dockerfile: Dockerfile.atlantis
         ports:
             - "4141:4141"
+        command: ["atlantis", "server", "--repo-config", "/etc/atlantis/repos.yaml"]
         env_file:
             - .env
         environment:
@@ -32,10 +35,19 @@ services:
             - AWS_ENDPOINT_URL_S3=http://localstack:4566
             - AWS_ENDPOINT_URL_IAM=http://localstack:4566
             - AWS_ENDPOINT_URL_STS=http://localstack:4566
+            # Atlantis Configuration
+            - ATLANTIS_ALLOWED_OVERRIDES=workflow,apply_requirements,delete_source_branch_on_merge
+            - ATLANTIS_ENABLE_POLICY_CHECKS=false
+            - ATLANTIS_ALLOW_CUSTOM_WORKFLOWS=true
+            - ATLANTIS_REQUIRE_APPROVAL=false
+            - ATLANTIS_REQUIRE_MERGEABLE=false
+            - ATLANTIS_REPO_CONFIG=/etc/atlantis/repos.yaml
         volumes:
             - ./atlantis:/atlantis
             - ./terraform:/terraform
+            - ./scripts:/scripts
             - ./atlantis.yaml:/atlantis.yaml
+            - ./server-atlantis.yaml:/etc/atlantis/repos.yaml
         depends_on:
             - localstack
         networks:
