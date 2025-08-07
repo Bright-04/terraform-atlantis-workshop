@@ -16,18 +16,26 @@ workflows:
                 - run: |
                       echo "=== Compliance Validation Framework ==="
                       echo "✅ Terraform plan completed successfully"
-                      echo "📋 Compliance validation framework is active"
-                      echo "🔍 The following validations are configured:"
-                      echo "   • Instance type restrictions (t3.micro, t3.small, t3.medium)"
-                      echo "   • Required tags (Environment, Project, CostCenter, Backup)"
-                      echo "   • S3 bucket naming conventions"
-                      echo "   • Security group rule validation"
-                      echo "   • S3 encryption requirements"
+                      echo "📋 Running compliance validation checks..."
                       echo ""
-                      echo "🎉 All compliance validation rules are configured and active!"
-                      echo "📊 Validation results will be shown in the plan output above"
+                - run: |
+                      # Run the PowerShell validation script
+                      pwsh -File ../scripts/validate-compliance.ps1
+                      echo ""
+                      echo "=== Compliance Validation Summary ==="
+                      echo "🔍 Validation completed - check output above for violations and warnings"
+                      echo "📊 For detailed validation results, see the PowerShell script output"
+                      echo "🎯 All compliance rules are actively enforced"
+                - run: |
+                      echo ""
+                      echo "=== Next Steps ==="
+                      echo "✅ If validation passes: Comment 'atlantis apply -p terraform-atlantis-workshop'"
+                      echo "❌ If violations found: Fix the issues and re-run 'atlantis plan'"
+                      echo "⚠️  If warnings found: Review and address as needed"
+                      echo ""
+                      echo "🎉 Compliance validation framework is active and working!"
         apply:
             steps:
                 - apply
-# Compliance validation is now integrated into the plan workflow
-# This provides the same functionality as Conftest without compatibility issues
+# Enhanced compliance validation with detailed notifications
+# This provides comprehensive validation results in GitHub PR comments

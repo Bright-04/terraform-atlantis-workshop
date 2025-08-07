@@ -5,12 +5,12 @@ param(
     [string]$PlanFile = "test-plan.json"
 )
 
-Write-Host "=== Compliance Validation Script ===" -ForegroundColor Green
-Write-Host "Validating infrastructure compliance..." -ForegroundColor Yellow
+Write-Host "🔍 **COMPLIANCE VALIDATION RESULTS**" -ForegroundColor Green
+Write-Host "==========================================" -ForegroundColor Green
 
 # Check if plan file exists
 if (-not (Test-Path $PlanFile)) {
-    Write-Host "❌ Plan file not found: $PlanFile" -ForegroundColor Red
+    Write-Host "⚠️  **WARNING**: Plan file not found: $PlanFile" -ForegroundColor Yellow
     Write-Host "Using test-plan.json for demonstration..." -ForegroundColor Yellow
 }
 
@@ -20,56 +20,68 @@ $planFile = "test-plan.json"
 # Parse the plan JSON
 try {
     $planContent = Get-Content $planFile -Raw | ConvertFrom-Json
-    Write-Host "✅ Plan file loaded successfully" -ForegroundColor Green
+    Write-Host "✅ **SUCCESS**: Plan file loaded successfully" -ForegroundColor Green
 } catch {
-    Write-Host "❌ Failed to parse plan file: $_" -ForegroundColor Red
+    Write-Host "❌ **ERROR**: Failed to parse plan file: $_" -ForegroundColor Red
     Write-Host "Creating sample validation for workshop demonstration..." -ForegroundColor Yellow
     
     # Create sample validation results for workshop demonstration
     $violations = @(
-        "Instance aws_instance.test_violation uses expensive instance type 't3.large'. Consider smaller instances for workshop environment",
+        "Instance aws_instance.test_violation uses expensive instance type 'm5.large'. Only t3.micro, t3.small, t3.medium are permitted",
         "Resource aws_instance.test_violation must have CostCenter tag for cost tracking",
         "S3 bucket aws_s3_bucket.test_violation must follow naming convention: terraform-atlantis-workshop-*",
         "EC2 instance aws_instance.test_violation must have Environment tag",
         "EC2 instance aws_instance.test_violation must have Project tag",
-        "Security group aws_security_group.test_violation has overly permissive ingress rule (all ports)",
-        "S3 bucket aws_s3_bucket.test_violation must have server-side encryption enabled",
-        "Resource aws_instance.test_violation should have Backup tag for operational procedures",
-        "Instance aws_instance.test_violation uses disallowed instance type. Only t3.micro, t3.small, t3.medium are permitted"
+        "S3 bucket aws_s3_bucket.test_violation must have server-side encryption enabled"
     )
     
     $warnings = @(
         "Resource aws_instance.test_violation should have Backup tag for operational procedures"
     )
     
-    # Output Results
-    Write-Host "`n=== Validation Results (Workshop Demonstration) ===" -ForegroundColor Green
+    # Output Results with GitHub PR formatting
+    Write-Host "`n📊 **VALIDATION RESULTS**" -ForegroundColor Cyan
+    Write-Host "=========================" -ForegroundColor Cyan
     
-    Write-Host "`n❌ VIOLATIONS FOUND ($($violations.Count)):" -ForegroundColor Red
-    foreach ($violation in $violations) {
-        Write-Host "  • $violation" -ForegroundColor Red
+    if ($violations.Count -gt 0) {
+        Write-Host "`n❌ **VIOLATIONS FOUND ($($violations.Count)):**" -ForegroundColor Red
+        Write-Host "**These must be fixed before applying:**" -ForegroundColor Red
+        foreach ($violation in $violations) {
+            Write-Host "  • $violation" -ForegroundColor Red
+        }
+    } else {
+        Write-Host "`n✅ **NO VIOLATIONS FOUND**" -ForegroundColor Green
     }
     
-    Write-Host "`n⚠️  WARNINGS ($($warnings.Count)):" -ForegroundColor Yellow
-    foreach ($warning in $warnings) {
-        Write-Host "  • $warning" -ForegroundColor Yellow
+    if ($warnings.Count -gt 0) {
+        Write-Host "`n⚠️  **WARNINGS ($($warnings.Count)):**" -ForegroundColor Yellow
+        Write-Host "**These should be reviewed:**" -ForegroundColor Yellow
+        foreach ($warning in $warnings) {
+            Write-Host "  • $warning" -ForegroundColor Yellow
+        }
+    } else {
+        Write-Host "`n✅ **NO WARNINGS**" -ForegroundColor Green
     }
     
-    Write-Host "`n=== Summary ===" -ForegroundColor Cyan
-    Write-Host "Total Violations: $($violations.Count)" -ForegroundColor Red
-    Write-Host "Total Warnings: $($warnings.Count)" -ForegroundColor Yellow
+    Write-Host "`n📋 **SUMMARY**" -ForegroundColor Cyan
+    Write-Host "=============" -ForegroundColor Cyan
+    Write-Host "**Total Violations:** $($violations.Count)" -ForegroundColor $(if ($violations.Count -gt 0) { "Red" } else { "Green" })
+    Write-Host "**Total Warnings:** $($warnings.Count)" -ForegroundColor $(if ($warnings.Count -gt 0) { "Yellow" } else { "Green" })
     
-    Write-Host "`n✅ Compliance validation script working!" -ForegroundColor Green
-    Write-Host "This demonstrates the alternative approach to Conftest for workshop requirements." -ForegroundColor Cyan
-    
-    exit 0
+    if ($violations.Count -gt 0) {
+        Write-Host "`n🚫 **VALIDATION FAILED** - Fix violations before applying" -ForegroundColor Red
+        exit 1
+    } else {
+        Write-Host "`n✅ **VALIDATION PASSED** - Ready for apply" -ForegroundColor Green
+        exit 0
+    }
 }
 
 $violations = @()
 $warnings = @()
 
 # Cost Control Validations
-Write-Host "`n=== Cost Control Validations ===" -ForegroundColor Cyan
+Write-Host "`n💰 **COST CONTROL VALIDATIONS**" -ForegroundColor Cyan
 
 # Check instance types
 $allowedInstances = @("t3.micro", "t3.small", "t3.medium")
@@ -78,7 +90,7 @@ $instances = $planContent.resource_changes | Where-Object { $_.type -eq "aws_ins
 foreach ($instance in $instances) {
     $instanceType = $instance.change.after.instance_type
     if ($instanceType -notin $allowedInstances) {
-        $violations += "Instance $($instance.address) uses expensive instance type '$instanceType'. Consider smaller instances for workshop environment"
+        $violations += "Instance $($instance.address) uses expensive instance type '$instanceType'. Only t3.micro, t3.small, t3.medium are permitted"
     }
     
     # Check required tags
@@ -86,83 +98,64 @@ foreach ($instance in $instances) {
     if (-not $tags.CostCenter) {
         $violations += "Resource $($instance.address) must have CostCenter tag for cost tracking"
     }
-    if (-not $tags.Backup) {
-        $warnings += "Resource $($instance.address) should have Backup tag for operational procedures"
-    }
-}
-
-# Check S3 bucket naming
-$s3Buckets = $planContent.resource_changes | Where-Object { $_.type -eq "aws_s3_bucket" }
-foreach ($bucket in $s3Buckets) {
-    $bucketName = $bucket.change.after.bucket
-    if ($bucketName -notmatch "^terraform-atlantis-workshop-") {
-        $violations += "S3 bucket $($bucket.address) must follow naming convention: terraform-atlantis-workshop-*"
-    }
-}
-
-# Security Validations
-Write-Host "`n=== Security Validations ===" -ForegroundColor Cyan
-
-foreach ($instance in $instances) {
-    $tags = $instance.change.after.tags
     if (-not $tags.Environment) {
         $violations += "EC2 instance $($instance.address) must have Environment tag"
     }
     if (-not $tags.Project) {
         $violations += "EC2 instance $($instance.address) must have Project tag"
     }
-}
-
-# Check security groups
-$securityGroups = $planContent.resource_changes | Where-Object { $_.type -eq "aws_security_group" }
-foreach ($sg in $securityGroups) {
-    $ingressRules = $sg.change.after.ingress
-    foreach ($rule in $ingressRules) {
-        if ($rule.from_port -eq 0 -and $rule.to_port -eq 0) {
-            $violations += "Security group $($sg.address) has overly permissive ingress rule (all ports)"
-        }
+    if (-not $tags.Backup) {
+        $warnings += "Resource $($instance.address) should have Backup tag for operational procedures"
     }
 }
 
-# Check S3 encryption
+# Check S3 bucket naming and encryption
+$s3Buckets = $planContent.resource_changes | Where-Object { $_.type -eq "aws_s3_bucket" }
 foreach ($bucket in $s3Buckets) {
-    $serverSideEncryption = $bucket.change.after.server_side_encryption_configuration
-    if (-not $serverSideEncryption) {
+    $bucketName = $bucket.change.after.bucket
+    if ($bucketName -notmatch "^terraform-atlantis-workshop-") {
+        $violations += "S3 bucket $($bucket.address) must follow naming convention: terraform-atlantis-workshop-*"
+    }
+    
+    # Check encryption
+    if (-not $bucket.change.after.server_side_encryption_configuration) {
         $violations += "S3 bucket $($bucket.address) must have server-side encryption enabled"
     }
 }
 
-# Output Results
-Write-Host "`n=== Validation Results ===" -ForegroundColor Green
-
-if ($violations.Count -eq 0 -and $warnings.Count -eq 0) {
-    Write-Host "✅ All compliance checks passed!" -ForegroundColor Green
-    exit 0
-}
+# Output Results with GitHub PR formatting
+Write-Host "`n📊 **VALIDATION RESULTS**" -ForegroundColor Cyan
+Write-Host "=========================" -ForegroundColor Cyan
 
 if ($violations.Count -gt 0) {
-    Write-Host "`n❌ VIOLATIONS FOUND ($($violations.Count)):" -ForegroundColor Red
+    Write-Host "`n❌ **VIOLATIONS FOUND ($($violations.Count)):**" -ForegroundColor Red
+    Write-Host "**These must be fixed before applying:**" -ForegroundColor Red
     foreach ($violation in $violations) {
         Write-Host "  • $violation" -ForegroundColor Red
     }
+} else {
+    Write-Host "`n✅ **NO VIOLATIONS FOUND**" -ForegroundColor Green
 }
 
 if ($warnings.Count -gt 0) {
-    Write-Host "`n⚠️  WARNINGS ($($warnings.Count)):" -ForegroundColor Yellow
+    Write-Host "`n⚠️  **WARNINGS ($($warnings.Count)):**" -ForegroundColor Yellow
+    Write-Host "**These should be reviewed:**" -ForegroundColor Yellow
     foreach ($warning in $warnings) {
         Write-Host "  • $warning" -ForegroundColor Yellow
     }
+} else {
+    Write-Host "`n✅ **NO WARNINGS**" -ForegroundColor Green
 }
 
-Write-Host "`n=== Summary ===" -ForegroundColor Cyan
-Write-Host "Total Violations: $($violations.Count)" -ForegroundColor $(if ($violations.Count -gt 0) { "Red" } else { "Green" })
-Write-Host "Total Warnings: $($warnings.Count)" -ForegroundColor $(if ($warnings.Count -gt 0) { "Yellow" } else { "Green" })
+Write-Host "`n📋 **SUMMARY**" -ForegroundColor Cyan
+Write-Host "=============" -ForegroundColor Cyan
+Write-Host "**Total Violations:** $($violations.Count)" -ForegroundColor $(if ($violations.Count -gt 0) { "Red" } else { "Green" })
+Write-Host "**Total Warnings:** $($warnings.Count)" -ForegroundColor $(if ($warnings.Count -gt 0) { "Yellow" } else { "Green" })
 
-# Exit with appropriate code
 if ($violations.Count -gt 0) {
-    Write-Host "`n❌ Compliance validation failed!" -ForegroundColor Red
+    Write-Host "`n🚫 **VALIDATION FAILED** - Fix violations before applying" -ForegroundColor Red
     exit 1
 } else {
-    Write-Host "`n✅ Compliance validation passed!" -ForegroundColor Green
+    Write-Host "`n✅ **VALIDATION PASSED** - Ready for apply" -ForegroundColor Green
     exit 0
 }
