@@ -1,11 +1,11 @@
 # Custom Atlantis image for workshop
 FROM ghcr.io/runatlantis/atlantis:v0.27.0
 
-# No need for Conftest - using alternative compliance validation approach
+# No need for PowerShell - using bash validation script
 # The compliance validation is now handled by:
 # 1. Terraform built-in validation (validation.tf)
 # 2. Custom Atlantis workflow (atlantis.yaml)
-# 3. PowerShell validation script (scripts/validate-compliance.ps1)
+# 3. Bash validation script (scripts/validate-compliance.sh)
 
 USER atlantis
 

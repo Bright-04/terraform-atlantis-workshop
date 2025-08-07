@@ -45,6 +45,7 @@ services:
         volumes:
             - ./atlantis:/atlantis
             - ./terraform:/terraform
+            - ./scripts:/scripts
             - ./atlantis.yaml:/atlantis.yaml
             - ./server-atlantis.yaml:/etc/atlantis/repos.yaml
         depends_on:

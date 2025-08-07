@@ -19,12 +19,14 @@ workflows:
                       echo "📋 Running compliance validation checks..."
                       echo ""
                 - run: |
-                      # Run the PowerShell validation script
-                      pwsh -File ../scripts/validate-compliance.ps1
+                      # Use bash validation script (more reliable on Alpine)
+                      echo "Running compliance validation script..."
+                      chmod +x ../scripts/validate-compliance.sh
+                      ../scripts/validate-compliance.sh
                       echo ""
                       echo "=== Compliance Validation Summary ==="
                       echo "🔍 Validation completed - check output above for violations and warnings"
-                      echo "📊 For detailed validation results, see the PowerShell script output"
+                      echo "📊 For detailed validation results, see the validation script output"
                       echo "🎯 All compliance rules are actively enforced"
                 - run: |
                       echo ""
