@@ -39,8 +39,8 @@ services:
             - ATLANTIS_ALLOWED_OVERRIDES=workflow,apply_requirements,delete_source_branch_on_merge
             - ATLANTIS_ENABLE_POLICY_CHECKS=true
             - ATLANTIS_ALLOW_CUSTOM_WORKFLOWS=true
-            - ATLANTIS_REQUIRE_APPROVAL=true
-            - ATLANTIS_REQUIRE_MERGEABLE=true
+            - ATLANTIS_REQUIRE_APPROVAL=false
+            - ATLANTIS_REQUIRE_MERGEABLE=false
             - ATLANTIS_REPO_CONFIG=/etc/atlantis/repos.yaml
             - DEFAULT_CONFTEST_VERSION=0.25.0
         volumes:
