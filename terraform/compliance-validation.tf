@@ -11,12 +11,14 @@ locals {
   ec2_instances = {
     web = aws_instance.web
     policy_test = aws_instance.policy_test
+    test_violation = aws_instance.test_violation
   }
   
   # Get all S3 buckets for validation
   s3_buckets = {
     workshop = aws_s3_bucket.workshop
     unencrypted_test = aws_s3_bucket.unencrypted_test
+    test_violation = aws_s3_bucket.test_violation
   }
 }
 
@@ -88,8 +90,8 @@ output "compliance_validation_results" {
 🔒 **SECURITY VALIDATIONS**
 ---------------------------
 ✅ Required Tags: Environment, Project, CostCenter
-✅ Instance Count: 2 instances configured
-✅ Bucket Count: 2 buckets configured
+✅ Instance Count: 3 instances configured
+✅ Bucket Count: 3 buckets configured
 ✅ Security Groups: Properly configured with restricted access
 
 📋 **SUMMARY**

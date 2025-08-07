@@ -1,12 +1,11 @@
-# Test configuration to trigger policy violations
-# This file intentionally violates policies for testing
+# Test resources with intentional policy violations
+# These are designed to trigger compliance validation failures
 
-# EC2 instance without required tags (violates security policies)
+# Violation: Expensive instance type (should be t3.micro, t3.small, or t3.medium)
 resource "aws_instance" "test_violation" {
   ami           = "ami-0abcdef1234567890"
-  instance_type = "t3.micro"  # Fixed: Changed from m5.large to t3.micro
+  instance_type = "m5.large"  # VIOLATION: Expensive instance type
 
-  # Fixed: Added required tags
   tags = {
     Name        = "test-violation-instance"
     Environment = "test"
@@ -15,11 +14,10 @@ resource "aws_instance" "test_violation" {
   }
 }
 
-# S3 bucket with incorrect naming (violates cost policy)
+# Violation: Wrong naming convention (should start with terraform-atlantis-workshop-)
 resource "aws_s3_bucket" "test_violation" {
-  bucket = "terraform-atlantis-workshop-test-violation"  # Fixed: Changed to follow naming convention
+  bucket = "wrong-naming-convention"  # VIOLATION: Doesn't follow naming convention
 
-  # Fixed: Added CostCenter tag
   tags = {
     Environment = "test"
     Project     = "terraform-atlantis-workshop"
@@ -27,12 +25,11 @@ resource "aws_s3_bucket" "test_violation" {
   }
 }
 
-# Security group with overly permissive rules (violates security policy)
+# Violation: Missing required tags (missing CostCenter)
 resource "aws_security_group" "test_violation" {
   name_prefix = "test-violation-sg"
   description = "Security group with policy violations"
 
-  # Fixed: Changed from overly permissive to specific ports
   ingress {
     from_port   = 22
     to_port     = 22
@@ -43,19 +40,18 @@ resource "aws_security_group" "test_violation" {
   tags = {
     Environment = "test"
     Project     = "terraform-atlantis-workshop"
-    CostCenter  = "workshop-training"
+    # VIOLATION: Missing CostCenter tag
   }
 }
 
-# EBS volume without CostCenter tag (violates cost policy)
+# Violation: Missing required tags (missing CostCenter)
 resource "aws_ebs_volume" "test_violation" {
   availability_zone = "us-west-2a"
   size              = 20
 
-  # Fixed: Added CostCenter tag
   tags = {
     Environment = "test"
     Project     = "terraform-atlantis-workshop"
-    CostCenter  = "workshop-training"
+    # VIOLATION: Missing CostCenter tag
   }
 }
