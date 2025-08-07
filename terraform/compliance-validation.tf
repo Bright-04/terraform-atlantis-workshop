@@ -71,39 +71,6 @@ resource "null_resource" "s3_naming_validation" {
   }
 }
 
-# Compliance validation output that shows during plan
-output "compliance_validation_results" {
-  description = "Compliance validation results"
-  value = <<-EOT
-🔍 **COMPLIANCE VALIDATION RESULTS**
-==========================================
-
-📊 **VALIDATION RESULTS**
-=========================
-
-💰 **COST CONTROL VALIDATIONS**
--------------------------------
-✅ Instance Types: All instances use approved types (t3.micro, t3.small, t3.medium)
-✅ Allowed Types: t3.micro, t3.small, t3.medium
-✅ S3 Buckets: All buckets follow terraform-atlantis-workshop-* naming convention
-
-🔒 **SECURITY VALIDATIONS**
----------------------------
-✅ Required Tags: Environment, Project, CostCenter
-✅ Instance Count: 3 instances configured
-✅ Bucket Count: 3 buckets configured
-✅ Security Groups: Properly configured with restricted access
-
-📋 **SUMMARY**
-=============
-✅ **VALIDATION PASSED** - All compliance rules satisfied
-✅ Terraform validation blocks will prevent violations
-✅ Configuration is compliant with workshop requirements
-
-🎉 Compliance validation framework is active and working!
-EOT
-}
-
 # Output validation status
 output "compliance_validation_status" {
   description = "Compliance validation status"
