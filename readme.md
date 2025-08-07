@@ -49,6 +49,18 @@ This workshop demonstrates **Environment Provisioning Automation** using Terrafo
     -   Complete variable definitions and validation
     -   Output values for resource references
 
+-   [x] **AWS Production Environment** ⭐ **NEW**
+
+    -   **AWS Production Infrastructure**: Complete AWS deployment configuration
+    -   Real EC2 instances with Apache web server
+    -   Production VPC with enhanced security
+    -   Encrypted S3 buckets with public access blocking
+    -   CloudWatch logging and monitoring
+    -   IAM roles and policies for secure access
+    -   Enhanced security groups and compliance
+    -   Cost estimation and optimization
+    -   Production deployment scripts and procedures
+
 -   [x] **Atlantis Integration**
 
     -   Complete Atlantis server configuration in Docker Compose
@@ -86,8 +98,9 @@ This workshop demonstrates **Environment Provisioning Automation** using Terrafo
 
 ### 🎯 Current Live Infrastructure
 
-**Environment**: LocalStack Development (localhost:4566)
+**Environment**: LocalStack Development (localhost:4566) + AWS Production Ready
 
+**LocalStack Development**:
 -   **VPC**: vpc-xxxxxxxxxxxxxxxx (10.0.0.0/16)
 -   **Public Subnet**: subnet-xxxxxxxxxxxxxxxx (10.0.1.0/24)
 -   **Private Subnet**: subnet-xxxxxxxxxxxxxxxx (10.0.2.0/24)
@@ -96,13 +109,29 @@ This workshop demonstrates **Environment Provisioning Automation** using Terrafo
 -   **Security Groups**: Properly configured with restricted access
 -   **Compliance Validation**: Active and preventing violations
 
-**⚠️ LocalStack Simulation Notes**:
+**AWS Production Ready**:
+-   **Real EC2 Instances**: Amazon Linux 2 with Apache web server
+-   **Production VPC**: Multi-AZ networking with enhanced security
+-   **Encrypted S3 Buckets**: AES256 encryption with public access blocking
+-   **CloudWatch Logging**: Centralized log management with retention policies
+-   **IAM Roles**: Secure access management for EC2 instances
+-   **Enhanced Security**: Production-ready security groups and compliance
 
+**⚠️ Environment Notes**:
+
+**LocalStack Simulation**:
 -   All resources are running on LocalStack with realistic AWS-like resource IDs
 -   The EC2 instances are simulated - no actual web servers are running
 -   Network connectivity is simulated - external URLs won't be accessible
 -   S3 bucket operations work through LocalStack endpoint (localhost:4566)
 -   Perfect for development, testing, and cost-free experimentation
+
+**AWS Production**:
+-   Real AWS infrastructure with actual costs (~$20-30/month)
+-   Live web servers accessible via public IP addresses
+-   Production-grade security and compliance features
+-   CloudWatch monitoring and logging
+-   Enterprise-ready infrastructure for production workloads
 
 ### 🎉 Workshop Requirements Status
 
@@ -127,20 +156,29 @@ terraform-atlantis-workshop/
 ├── setup-github-integration.ps1    # GitHub integration setup script
 ├── workshop_info.md                # Workshop requirements and objectives
 ├── terraform/
-│   ├── main.tf                     # Main Terraform configuration
+│   ├── main.tf                     # Main Terraform configuration (LocalStack)
+│   ├── main-aws.tf                 # ⭐ AWS production configuration
 │   ├── variables.tf                # Variable definitions
 │   ├── outputs.tf                  # Output values
 │   ├── versions.tf                 # Provider requirements
 │   ├── compliance-validation.tf    # ⭐ Compliance validation rules
 │   ├── test-policy-violations.tf   # Test resources for validation
 │   ├── terraform.tfvars.example    # Example variables
-│   ├── deploy.ps1                  # Deployment script
+│   ├── deploy.ps1                  # LocalStack deployment script
+│   ├── deploy-aws.ps1              # ⭐ AWS production deployment script
 │   └── destroy.ps1                 # Cleanup script
 ├── policies/                       # Policy files (for reference)
 ├── scripts/
 │   └── rollback.ps1               # Rollback functionality
 ├── monitoring/                     # Monitoring configuration
+│   ├── health-check.ps1           # LocalStack health check
+│   └── health-check-aws.ps1       # ⭐ AWS production health check
 ├── docs/                          # Documentation
+│   ├── 1.OPERATIONS.md            # Operational procedures
+│   ├── 2.COMPLIANCE-VALIDATION.md # Compliance validation
+│   ├── 3.DEPLOYMENT-GUIDE.md      # Deployment procedures
+│   ├── 4.TESTING-GUIDE.md         # Testing procedures
+│   └── 5.AWS-PRODUCTION-GUIDE.md  # ⭐ AWS production guide
 └── localstack-data/               # LocalStack persistence data
 ```
 
@@ -148,28 +186,34 @@ terraform-atlantis-workshop/
 
 ### Prerequisites
 
+**For LocalStack Development:**
 -   Docker Desktop installed and running
 -   PowerShell (Windows) or equivalent shell
 -   Git for version control
 -   GitHub account (for Atlantis integration)
 
+**For AWS Production:**
+-   AWS CLI installed and configured
+-   AWS account with appropriate permissions
+-   PowerShell (Windows) or equivalent shell
+-   Git for version control
+
 ### Quick Start
 
-1. **Clone and Navigate**
+**LocalStack Development:**
 
+1. **Clone and Navigate**
     ```powershell
     git clone <repository-url>
     cd terraform-atlantis-workshop
     ```
 
 2. **Start LocalStack**
-
     ```powershell
     docker-compose up localstack -d
     ```
 
 3. **Deploy Infrastructure**
-
     ```powershell
     cd terraform
     .\deploy.ps1
@@ -179,6 +223,24 @@ terraform-atlantis-workshop/
     ```powershell
     terraform output
     aws --endpoint-url=http://localhost:4566 ec2 describe-instances
+    ```
+
+**AWS Production:**
+
+1. **Configure AWS Credentials**
+    ```powershell
+    aws configure
+    ```
+
+2. **Deploy to AWS**
+    ```powershell
+    cd terraform
+    .\deploy-aws.ps1
+    ```
+
+3. **Verify AWS Deployment**
+    ```powershell
+    .\monitoring\health-check-aws.ps1
     ```
 
 ### Atlantis GitOps Workflow
