@@ -21,8 +21,8 @@ workflows:
                 - run: |
                       # Use bash validation script (more reliable on Alpine)
                       echo "Running compliance validation script..."
-                      chmod +x ../scripts/validate-compliance.sh
-                      ../scripts/validate-compliance.sh
+                      chmod +x /scripts/validate-compliance.sh
+                      /scripts/validate-compliance.sh
                       echo ""
                       echo "=== Compliance Validation Summary ==="
                       echo "🔍 Validation completed - check output above for violations and warnings"
