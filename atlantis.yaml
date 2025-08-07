@@ -3,41 +3,6 @@ projects:
     - name: terraform-atlantis-workshop
       dir: terraform
       terraform_version: v1.6.0
-
-workflows:
-    default:
-        plan:
-            steps:
-                - env:
-                      name: TF_IN_AUTOMATION
-                      value: "true"
-                - init
-                - plan
-                - run: |
-                      echo "=== Compliance Validation Framework ==="
-                      echo "✅ Terraform plan completed successfully"
-                      echo "📋 Running compliance validation checks..."
-                      echo ""
-                - run: |
-                      # Use bash validation script (more reliable on Alpine)
-                      echo "Running compliance validation script..."
-                      chmod +x /scripts/validate-compliance.sh
-                      /scripts/validate-compliance.sh
-                      echo ""
-                      echo "=== Compliance Validation Summary ==="
-                      echo "🔍 Validation completed - check output above for violations and warnings"
-                      echo "📊 For detailed validation results, see the validation script output"
-                      echo "🎯 All compliance rules are actively enforced"
-                - run: |
-                      echo ""
-                      echo "=== Next Steps ==="
-                      echo "✅ If validation passes: Comment 'atlantis apply -p terraform-atlantis-workshop'"
-                      echo "❌ If violations found: Fix the issues and re-run 'atlantis plan'"
-                      echo "⚠️  If warnings found: Review and address as needed"
-                      echo ""
-                      echo "🎉 Compliance validation framework is active and working!"
-        apply:
-            steps:
-                - apply
-# Enhanced compliance validation with detailed notifications
-# This provides comprehensive validation results in GitHub PR comments
+# Using default workflow for maximum reliability
+# Compliance validation is now handled by Terraform-native validation in compliance-validation.tf
+# This provides comprehensive validation without external dependencies or complex workflows
