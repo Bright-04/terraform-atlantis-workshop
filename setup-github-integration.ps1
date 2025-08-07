@@ -146,7 +146,7 @@ Write-Host "8. Comment 'atlantis apply' to execute" -ForegroundColor White
 Write-Host "`n📊 Monitoring and Verification:" -ForegroundColor Magenta
 Write-Host "• Atlantis UI: $ngrokUrl" -ForegroundColor White
 Write-Host "• Atlantis Logs: docker-compose logs atlantis" -ForegroundColor White
-Write-Host "• LocalStack Health: curl http://localhost:4566/_localstack/health" -ForegroundColor White
+Write-Host "• AWS Health: aws sts get-caller-identity" -ForegroundColor White
 Write-Host "• Test Policy Validation: policies/ directory contains security and cost controls" -ForegroundColor White
 
 Write-Host "`n🎯 Workshop Success Criteria:" -ForegroundColor Magenta

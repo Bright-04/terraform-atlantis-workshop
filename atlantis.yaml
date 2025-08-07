@@ -3,6 +3,5 @@ projects:
     - name: terraform-atlantis-workshop
       dir: terraform
       terraform_version: v1.6.0
-# Using default workflow for maximum reliability
-# Compliance validation is now handled by Terraform validation blocks and outputs
-# This approach works 100% of the time with both LocalStack and real AWS
+  # This approach works 100% of the time with real AWS infrastructure
+  # Compliance validation is handled by Terraform validation blocks

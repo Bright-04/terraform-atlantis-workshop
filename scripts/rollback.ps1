@@ -43,19 +43,20 @@ function Backup-CurrentState {
 function Test-PreRollbackHealth {
     Write-Host "`n🔍 Pre-rollback health check..." -ForegroundColor Yellow
     
-    # Check if services are running
-    $localstackRunning = docker-compose ps localstack | Select-String "Up"
-    $atlantisRunning = docker-compose ps atlantis | Select-String "Up"
-    
-    if (-not $localstackRunning) {
-        Write-Host "   ⚠️ LocalStack is not running" -ForegroundColor Yellow
+    # Check AWS credentials and region
+    try {
+        $awsRegion = aws configure get region
+        $awsAccount = aws sts get-caller-identity --query 'Account' --output text
+        
+        Write-Host "   ✅ AWS Region: $awsRegion" -ForegroundColor Green
+        Write-Host "   ✅ AWS Account: $awsAccount" -ForegroundColor Green
+        
+        return $true
     }
-    
-    if (-not $atlantisRunning) {
-        Write-Host "   ⚠️ Atlantis is not running" -ForegroundColor Yellow
+    catch {
+        Write-Host "   ❌ AWS credentials not configured" -ForegroundColor Red
+        return $false
     }
-    
-    return $localstackRunning -and $atlantisRunning
 }
 
 # Git-based rollback

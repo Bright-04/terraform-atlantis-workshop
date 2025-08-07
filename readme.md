@@ -2,7 +2,7 @@
 
 ## Overview
 
-This workshop demonstrates **Environment Provisioning Automation** using Terraform and Atlantis with a focus on approval workflows, cost controls, monitoring integration, and **compliance validation**. The project is designed to work with both LocalStack (for cost-free development) and real AWS infrastructure.
+This workshop demonstrates **Environment Provisioning Automation** using Terraform and Atlantis with a focus on approval workflows, cost controls, monitoring integration, and **compliance validation**. The project is designed for real AWS production infrastructure deployment.
 
 ### Workshop Objectives
 
@@ -18,7 +18,7 @@ This workshop demonstrates **Environment Provisioning Automation** using Terrafo
 
 -   **Terraform (v1.6.0)** - Infrastructure as Code
 -   **AWS Provider (~5.100)** - Cloud resources management
--   **LocalStack** - Local AWS cloud stack for development
+-   **AWS Production Environment** - Real cloud infrastructure
 -   **Docker & Docker Compose** - Container orchestration
 
 ### Development Tools
@@ -36,18 +36,6 @@ This workshop demonstrates **Environment Provisioning Automation** using Terrafo
 ## Current Status
 
 ### ✅ Completed
-
--   [x] **LocalStack Development Environment**
-
-    -   **LIVE LocalStack Infrastructure**: Successfully deployed to LocalStack simulation
-    -   Docker Compose configuration with LocalStack and Atlantis
-    -   VPC with public/private subnets (10.0.0.0/16)
-    -   Internet Gateway and route tables
-    -   Security groups for web servers (HTTP, HTTPS, SSH)
-    -   EC2 instances running Amazon Linux 2
-    -   S3 buckets with versioning and encryption
-    -   Complete variable definitions and validation
-    -   Output values for resource references
 
 -   [x] **AWS Production Environment** ⭐ **NEW**
 
@@ -79,7 +67,7 @@ This workshop demonstrates **Environment Provisioning Automation** using Terrafo
     -   **Real-time violation detection** during `terraform plan`
     -   **Clear error messages** in GitHub PR comments
     -   **Prevents deployment** when violations are detected
-    -   **Works with both LocalStack and real AWS**
+    -   **Works with real AWS production infrastructure**
 
 -   [x] **Cost Controls & Monitoring**
 
@@ -98,35 +86,22 @@ This workshop demonstrates **Environment Provisioning Automation** using Terrafo
 
 ### 🎯 Current Live Infrastructure
 
-**Environment**: LocalStack Development (localhost:4566) + AWS Production Ready
+**Environment**: AWS Production Infrastructure
 
-**LocalStack Development**:
--   **VPC**: vpc-xxxxxxxxxxxxxxxx (10.0.0.0/16)
--   **Public Subnet**: subnet-xxxxxxxxxxxxxxxx (10.0.1.0/24)
--   **Private Subnet**: subnet-xxxxxxxxxxxxxxxx (10.0.2.0/24)
--   **EC2 Instances**: Multiple t3.micro instances with proper tagging
--   **S3 Buckets**: Multiple buckets with versioning and proper naming
--   **Security Groups**: Properly configured with restricted access
--   **Compliance Validation**: Active and preventing violations
+**AWS Production Infrastructure**:
 
-**AWS Production Ready**:
 -   **Real EC2 Instances**: Amazon Linux 2 with Apache web server
 -   **Production VPC**: Multi-AZ networking with enhanced security
 -   **Encrypted S3 Buckets**: AES256 encryption with public access blocking
 -   **CloudWatch Logging**: Centralized log management with retention policies
 -   **IAM Roles**: Secure access management for EC2 instances
 -   **Enhanced Security**: Production-ready security groups and compliance
+-   **Compliance Validation**: Active and preventing violations
 
 **⚠️ Environment Notes**:
 
-**LocalStack Simulation**:
--   All resources are running on LocalStack with realistic AWS-like resource IDs
--   The EC2 instances are simulated - no actual web servers are running
--   Network connectivity is simulated - external URLs won't be accessible
--   S3 bucket operations work through LocalStack endpoint (localhost:4566)
--   Perfect for development, testing, and cost-free experimentation
-
 **AWS Production**:
+
 -   Real AWS infrastructure with actual costs (~$20-30/month)
 -   Live web servers accessible via public IP addresses
 -   Production-grade security and compliance features
@@ -137,7 +112,7 @@ This workshop demonstrates **Environment Provisioning Automation** using Terrafo
 
 | Requirement                    | Status       | Implementation                  | Working |
 | ------------------------------ | ------------ | ------------------------------- | ------- |
-| ✅ **Provisioning Automation** | COMPLETE     | Terraform + LocalStack          | ✅      |
+| ✅ **Provisioning Automation** | COMPLETE     | Terraform + AWS Production      | ✅      |
 | ✅ **Approval Workflows**      | COMPLETE     | GitHub PR + Atlantis            | ✅      |
 | ✅ **Cost Controls**           | COMPLETE     | Instance types, tags, naming    | ✅      |
 | ✅ **Monitoring Integration**  | COMPLETE     | Validation results integrated   | ✅      |
@@ -151,27 +126,22 @@ This workshop demonstrates **Environment Provisioning Automation** using Terrafo
 ```
 terraform-atlantis-workshop/
 ├── atlantis.yaml                   # Atlantis workflow configuration
-├── docker-compose.yml              # LocalStack and Atlantis containers
-├── Dockerfile.atlantis             # Custom Atlantis Docker image
 ├── setup-github-integration.ps1    # GitHub integration setup script
 ├── workshop_info.md                # Workshop requirements and objectives
 ├── terraform/
-│   ├── main.tf                     # Main Terraform configuration (LocalStack)
-│   ├── main-aws.tf                 # ⭐ AWS production configuration
+│   ├── main.tf                     # Main Terraform configuration (AWS Production)
 │   ├── variables.tf                # Variable definitions
 │   ├── outputs.tf                  # Output values
 │   ├── versions.tf                 # Provider requirements
 │   ├── compliance-validation.tf    # ⭐ Compliance validation rules
 │   ├── test-policy-violations.tf   # Test resources for validation
 │   ├── terraform.tfvars.example    # Example variables
-│   ├── deploy.ps1                  # LocalStack deployment script
 │   ├── deploy-aws.ps1              # ⭐ AWS production deployment script
 │   └── destroy.ps1                 # Cleanup script
 ├── policies/                       # Policy files (for reference)
 ├── scripts/
 │   └── rollback.ps1               # Rollback functionality
 ├── monitoring/                     # Monitoring configuration
-│   ├── health-check.ps1           # LocalStack health check
 │   └── health-check-aws.ps1       # ⭐ AWS production health check
 ├── docs/                          # Documentation
 │   ├── 1.OPERATIONS.md            # Operational procedures
@@ -179,66 +149,46 @@ terraform-atlantis-workshop/
 │   ├── 3.DEPLOYMENT-GUIDE.md      # Deployment procedures
 │   ├── 4.TESTING-GUIDE.md         # Testing procedures
 │   └── 5.AWS-PRODUCTION-GUIDE.md  # ⭐ AWS production guide
-└── localstack-data/               # LocalStack persistence data
+└── aws-production-data/           # AWS production data
 ```
 
 ## Getting Started
 
 ### Prerequisites
 
-**For LocalStack Development:**
--   Docker Desktop installed and running
--   PowerShell (Windows) or equivalent shell
--   Git for version control
--   GitHub account (for Atlantis integration)
-
 **For AWS Production:**
+
 -   AWS CLI installed and configured
 -   AWS account with appropriate permissions
 -   PowerShell (Windows) or equivalent shell
 -   Git for version control
+-   GitHub account (for Atlantis integration)
 
 ### Quick Start
 
-**LocalStack Development:**
+**AWS Production:**
 
 1. **Clone and Navigate**
+
     ```powershell
     git clone <repository-url>
     cd terraform-atlantis-workshop
     ```
 
-2. **Start LocalStack**
-    ```powershell
-    docker-compose up localstack -d
-    ```
+2. **Configure AWS Credentials**
 
-3. **Deploy Infrastructure**
-    ```powershell
-    cd terraform
-    .\deploy.ps1
-    ```
-
-4. **Verify Deployment**
-    ```powershell
-    terraform output
-    aws --endpoint-url=http://localhost:4566 ec2 describe-instances
-    ```
-
-**AWS Production:**
-
-1. **Configure AWS Credentials**
     ```powershell
     aws configure
     ```
 
-2. **Deploy to AWS**
+3. **Deploy to AWS**
+
     ```powershell
     cd terraform
     .\deploy-aws.ps1
     ```
 
-3. **Verify AWS Deployment**
+4. **Verify AWS Deployment**
     ```powershell
     .\monitoring\health-check-aws.ps1
     ```
@@ -251,10 +201,11 @@ terraform-atlantis-workshop/
     .\setup-github-integration.ps1
     ```
 
-2. **Start Atlantis**
+2. **Start Atlantis (Manual Setup)**
 
     ```powershell
-    docker-compose up atlantis -d
+    # Install Atlantis manually or use Docker
+    # Follow the setup-github-integration.ps1 instructions
     ```
 
 3. **Access Atlantis UI**
@@ -341,14 +292,14 @@ Current buckets: [violating bucket names]
 -   **Real-Time Detection**: Violations caught during plan phase
 -   **Clear Error Messages**: Specific violation details in PR comments
 -   **Prevention**: Stops deployment when violations exist
--   **Environment Agnostic**: Works with LocalStack and real AWS
+-   **AWS Production Focus**: Optimized for real AWS infrastructure
 
-### Cost-Effective Development
+### Production-Ready Infrastructure
 
--   **LocalStack Integration**: Develop and test without AWS costs
--   **Container-Based Setup**: Quick environment provisioning
--   **Resource Optimization**: Efficient resource allocation
--   **Environment Isolation**: Separate development and production
+-   **AWS Production Environment**: Real cloud infrastructure deployment
+-   **Enhanced Security**: Production-grade security and compliance
+-   **Resource Optimization**: Efficient resource allocation and cost control
+-   **Monitoring Integration**: CloudWatch logging and monitoring
 
 ### Infrastructure as Code
 
@@ -384,11 +335,11 @@ Customize these values in `terraform.tfvars` or through environment variables.
 
 ### Common Issues
 
-**LocalStack Issues:**
+**AWS Issues:**
 
--   **LocalStack not starting**: Check Docker Desktop is running
--   **Port conflicts**: Ensure ports 4566 and 4510-4559 are available
--   **Service timeouts**: Wait for LocalStack health check to pass
+-   **AWS credentials not configured**: Run `aws configure`
+-   **Insufficient permissions**: Ensure IAM roles have required permissions
+-   **Region configuration**: Verify AWS region is set correctly
 
 **Atlantis Issues:**
 
@@ -404,26 +355,25 @@ Customize these values in `terraform.tfvars` or through environment variables.
 
 ### Service Management
 
-**Check Service Status:**
+**Check AWS Status:**
 
 ```powershell
-# Check all services
-docker-compose ps
+# Check AWS credentials and region
+aws sts get-caller-identity
+aws configure get region
 
-# Check specific service logs
-docker-compose logs localstack
-docker-compose logs atlantis
+# Check infrastructure health
+.\monitoring\health-check-aws.ps1
 ```
 
 **Restart Services:**
 
 ```powershell
-# Restart specific service
-docker-compose restart localstack
+# Restart Atlantis (if using Docker)
 docker-compose restart atlantis
 
-# Restart all services
-docker-compose restart
+# Check AWS infrastructure
+aws ec2 describe-instances --query 'Reservations[*].Instances[*].[InstanceId,State.Name]' --output table
 ```
 
 ### Cleanup
@@ -433,11 +383,8 @@ docker-compose restart
 cd terraform
 .\destroy.ps1
 
-# Stop all services
-docker-compose down
-
-# Remove volumes and networks (complete cleanup)
-docker-compose down -v --remove-orphans
+# Verify cleanup
+aws ec2 describe-instances --query 'Reservations[*].Instances[*].[InstanceId,State.Name]' --output table
 ```
 
 ## Next Steps
