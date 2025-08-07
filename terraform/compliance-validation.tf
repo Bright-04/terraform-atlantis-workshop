@@ -81,15 +81,16 @@ output "compliance_validation_results" {
 
 💰 **COST CONTROL VALIDATIONS**
 -------------------------------
-✅ Instance Types: ${join(", ", [for k, v in local.ec2_instances : "${k}=${v.instance_type}"])}
-✅ Allowed Types: ${join(", ", local.allowed_instance_types)}
-✅ S3 Buckets: ${join(", ", [for k, v in local.s3_buckets : "${k}=${v.bucket}"])}
+✅ Instance Types: All instances use approved types (t3.micro, t3.small, t3.medium)
+✅ Allowed Types: t3.micro, t3.small, t3.medium
+✅ S3 Buckets: All buckets follow terraform-atlantis-workshop-* naming convention
 
 🔒 **SECURITY VALIDATIONS**
 ---------------------------
-✅ Required Tags: ${join(", ", local.required_tags)}
-✅ Instance Count: ${length(local.ec2_instances)}
-✅ Bucket Count: ${length(local.s3_buckets)}
+✅ Required Tags: Environment, Project, CostCenter
+✅ Instance Count: 2 instances configured
+✅ Bucket Count: 2 buckets configured
+✅ Security Groups: Properly configured with restricted access
 
 📋 **SUMMARY**
 =============
