@@ -20,49 +20,6 @@ locals {
   }
 }
 
-# Simple compliance validation that runs during plan/apply
-resource "null_resource" "compliance_validation" {
-  triggers = {
-    # Trigger validation on any infrastructure change
-    instances = join(",", [for k, v in local.ec2_instances : "${k}:${v.instance_type}"])
-    buckets = join(",", [for k, v in local.s3_buckets : "${k}:${v.bucket}"])
-  }
-
-  provisioner "local-exec" {
-    command = <<-EOT
-      echo "🔍 **COMPLIANCE VALIDATION RESULTS**"
-      echo "=========================================="
-      echo ""
-      echo "📊 **VALIDATION RESULTS**"
-      echo "========================="
-      echo ""
-      
-      echo "💰 **COST CONTROL VALIDATIONS**"
-      echo "-------------------------------"
-      echo "Checking EC2 instance types and tags..."
-      echo "✅ Compliance validation framework is active"
-      echo ""
-      
-      echo "🔒 **SECURITY VALIDATIONS**"
-      echo "---------------------------"
-      echo "Checking S3 bucket naming and encryption..."
-      echo "✅ Security validation framework is active"
-      echo ""
-      
-      echo "📋 **SUMMARY**"
-      echo "============="
-      echo "✅ **VALIDATION PASSED** - Ready for apply"
-      echo ""
-      echo "=== Next Steps ==="
-      echo "✅ Run: terraform apply"
-      echo ""
-      echo "🎉 Compliance validation framework is active and working!"
-      echo ""
-      echo "Note: Detailed validation will be performed during apply phase"
-    EOT
-  }
-}
-
 # Output validation status
 output "compliance_validation_status" {
   description = "Compliance validation status"
