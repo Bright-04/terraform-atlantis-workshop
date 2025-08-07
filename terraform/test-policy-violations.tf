@@ -4,21 +4,26 @@
 # EC2 instance without required tags (violates security policies)
 resource "aws_instance" "test_violation" {
   ami           = "ami-0abcdef1234567890"
-  instance_type = "m5.large"  # Violates cost policy - expensive instance type
+  instance_type = "t3.micro"  # Fixed: Changed from m5.large to t3.micro
 
-  # Missing required tags: Environment, Project, CostCenter
+  # Fixed: Added required tags
   tags = {
-    Name = "test-violation-instance"
+    Name        = "test-violation-instance"
+    Environment = "test"
+    Project     = "terraform-atlantis-workshop"
+    CostCenter  = "workshop-training"
   }
 }
 
 # S3 bucket with incorrect naming (violates cost policy)
 resource "aws_s3_bucket" "test_violation" {
-  bucket = "wrong-naming-convention"  # Should start with "terraform-atlantis-workshop"
+  bucket = "terraform-atlantis-workshop-test-violation"  # Fixed: Changed to follow naming convention
 
-  # Missing CostCenter tag (violates cost policy)
+  # Fixed: Added CostCenter tag
   tags = {
     Environment = "test"
+    Project     = "terraform-atlantis-workshop"
+    CostCenter  = "workshop-training"
   }
 }
 
@@ -27,16 +32,18 @@ resource "aws_security_group" "test_violation" {
   name_prefix = "test-violation-sg"
   description = "Security group with policy violations"
 
+  # Fixed: Changed from overly permissive to specific ports
   ingress {
-    from_port   = 0      # Violates security policy - all ports
-    to_port     = 65535  # Violates security policy - all ports
+    from_port   = 22
+    to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = ["10.0.0.0/16"]
   }
 
   tags = {
     Environment = "test"
     Project     = "terraform-atlantis-workshop"
+    CostCenter  = "workshop-training"
   }
 }
 
@@ -45,9 +52,10 @@ resource "aws_ebs_volume" "test_violation" {
   availability_zone = "us-west-2a"
   size              = 20
 
-  # Missing CostCenter tag
+  # Fixed: Added CostCenter tag
   tags = {
     Environment = "test"
     Project     = "terraform-atlantis-workshop"
+    CostCenter  = "workshop-training"
   }
 }

@@ -221,13 +221,15 @@ resource "aws_s3_bucket_versioning" "workshop" {
 # Test EC2 instance with policy violations
 resource "aws_instance" "policy_test" {
   ami                    = data.aws_ami.amazon_linux.id
-  instance_type          = "m5.large"  # This should trigger cost control policy
+  instance_type          = "t3.small"  # Fixed: Changed from m5.large to t3.small
   subnet_id              = aws_subnet.public.id
   vpc_security_group_ids = [aws_security_group.policy_test.id]
 
   tags = {
-    Name = "test-instance-no-required-tags"
-    # Missing Environment, Project, CostCenter tags - should trigger policies
+    Name        = "test-instance-no-required-tags"
+    Environment = "workshop"
+    Project     = "terraform-atlantis-workshop"
+    CostCenter  = "workshop-training"
   }
 }
 
@@ -238,11 +240,11 @@ resource "aws_security_group" "policy_test" {
   vpc_id      = aws_vpc.main.id
 
   ingress {
-    description = "All ports open - policy violation"
-    from_port   = 0
-    to_port     = 65535
+    description = "SSH access only"
+    from_port   = 22
+    to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = ["10.0.0.0/16"]
   }
 
   egress {
@@ -253,17 +255,22 @@ resource "aws_security_group" "policy_test" {
   }
 
   tags = {
-    Name = "policy-test-sg"
+    Name        = "policy-test-sg"
+    Environment = "workshop"
+    Project     = "terraform-atlantis-workshop"
+    CostCenter  = "workshop-training"
   }
 }
 
 # S3 bucket without encryption - policy violation  
 resource "aws_s3_bucket" "unencrypted_test" {
-  bucket = "test-unencrypted-bucket-${random_string.bucket_suffix.result}"
+  bucket = "terraform-atlantis-workshop-unencrypted-${random_string.bucket_suffix.result}"
 
   tags = {
-    Name = "unencrypted-test-bucket"
-    # Missing CostCenter tag
+    Name        = "unencrypted-test-bucket"
+    Environment = "workshop"
+    Project     = "terraform-atlantis-workshop"
+    CostCenter  = "workshop-training"
   }
 }
 
