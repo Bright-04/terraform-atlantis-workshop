@@ -36,16 +36,16 @@ deny[msg] {
     msg := sprintf("S3 bucket %s must have server-side encryption enabled", [resource.address])
 }
 
-# Warn about missing backup tags for instances
-warn[msg] {
+# Deny instances without backup tags (converted from warn to deny for v0.25.0 compatibility)
+deny[msg] {
     resource := input.resource_changes[_]
     resource.type == "aws_instance"
     not resource.change.after.tags.Backup
     msg := sprintf("Resource %s should have Backup tag for operational procedures", [resource.address])
 }
 
-# Warn about missing backup tags for EBS volumes
-warn[msg] {
+# Deny EBS volumes without backup tags (converted from warn to deny for v0.25.0 compatibility)
+deny[msg] {
     resource := input.resource_changes[_]
     resource.type == "aws_ebs_volume"
     not resource.change.after.tags.Backup

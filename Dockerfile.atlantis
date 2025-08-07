@@ -1,5 +1,5 @@
 # Custom Atlantis image with Conftest for policy checking
-FROM ghcr.io/runatlantis/atlantis:latest
+FROM ghcr.io/runatlantis/atlantis:v0.27.0
 
 # Install Conftest for OPA policy checking
 USER root

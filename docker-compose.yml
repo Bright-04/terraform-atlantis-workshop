@@ -42,12 +42,12 @@ services:
             - ATLANTIS_REQUIRE_APPROVAL=true
             - ATLANTIS_REQUIRE_MERGEABLE=true
             - ATLANTIS_REPO_CONFIG=/etc/atlantis/repos.yaml
-            - DEFAULT_CONFTEST_VERSION=0.46.0
+            - DEFAULT_CONFTEST_VERSION=0.25.0
         volumes:
             - ./atlantis:/atlantis
             - ./terraform:/terraform
             - ./atlantis.yaml:/atlantis.yaml
-            - ./policies:/policies
+            - ./policies:/policies:ro
             - ./server-atlantis.yaml:/etc/atlantis/repos.yaml
         depends_on:
             - localstack
