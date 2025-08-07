@@ -1,6 +1,24 @@
 # Operational Procedures - Terraform Atlantis Workshop
 
-This document contains comprehensive operational procedures for managing the Terraform Atlantis Workshop infrastructure.
+This document contains comprehensive operational procedures for managing the Terraform Atlantis Workshop infrastructure with compliance validation.
+
+## 🎯 Current System Status
+
+### ✅ **Fully Operational Components**
+
+-   **LocalStack Infrastructure**: Running on localhost:4566
+-   **Atlantis GitOps**: Integrated with GitHub PR workflows
+-   **Compliance Validation**: Native Terraform validation blocks active
+-   **Cost Controls**: Instance type restrictions and tagging enforced
+-   **Rollback Procedures**: Documented and tested
+
+### 🔧 **System Architecture**
+
+-   **Environment**: LocalStack (AWS simulation)
+-   **Terraform Version**: v1.6.0
+-   **AWS Provider**: ~5.100
+-   **Compliance Engine**: Terraform `lifecycle.precondition` blocks
+-   **GitOps**: Atlantis with GitHub integration
 
 ## 🔄 Rollback Procedures
 
@@ -23,6 +41,9 @@ If a Terraform apply causes infrastructure issues:
 
     # Check recent changes
     terraform show -json | jq '.values.root_module.resources[].name'
+
+    # Check compliance validation status
+    terraform output compliance_validation_status
     ```
 
 3. **Rollback to Previous State**
@@ -54,6 +75,32 @@ If a Terraform apply causes infrastructure issues:
     - Title: "🚨 ROLLBACK: [description]"
     - Add `atlantis plan` comment
     - After review, add `atlantis apply` comment
+
+### Compliance Violation Rollback
+
+If compliance violations are detected:
+
+1. **Identify Violations**
+
+    ```bash
+    # Check violation details in PR comments
+    # Look for error messages like:
+    # ❌ VIOLATION: Found expensive instance types...
+    ```
+
+2. **Fix Violations**
+
+    ```terraform
+    # Example: Change instance type from m5.large to t3.micro
+    resource "aws_instance" "test_violation" {
+      instance_type = "t3.micro"  # Fixed: compliant instance type
+    }
+    ```
+
+3. **Re-run Validation**
+    ```bash
+    atlantis plan -p terraform-atlantis-workshop
+    ```
 
 ### State Recovery
 
@@ -92,6 +139,10 @@ If Terraform state is corrupted:
 # Check service logs
 docker-compose logs --tail=50 localstack
 docker-compose logs --tail=50 atlantis
+
+# Verify compliance validation
+cd terraform
+terraform output compliance_validation_status
 ```
 
 **Weekly Maintenance:**
@@ -106,6 +157,10 @@ docker system prune -f
 
 # Backup Terraform state
 cp terraform\terraform.tfstate backups\terraform.tfstate.$(Get-Date -Format "yyyyMMdd-HHmm")
+
+# Test compliance validation
+cd terraform
+terraform plan  # Should pass without violations
 ```
 
 ### LocalStack Maintenance
@@ -151,6 +206,29 @@ docker-compose restart atlantis
 docker-compose exec atlantis atlantis version
 ```
 
+### Compliance Validation Maintenance
+
+**Test Validation Rules:**
+
+```powershell
+# Test with violations
+cd terraform
+# Temporarily change instance type to m5.large in test-policy-violations.tf
+terraform plan  # Should fail with violation message
+
+# Restore compliant configuration
+git checkout -- test-policy-violations.tf
+terraform plan  # Should pass
+```
+
+**Update Validation Rules:**
+
+```powershell
+# Edit compliance-validation.tf
+# Add new validation rules as needed
+# Test with terraform plan
+```
+
 ## 📊 Monitoring & Alerting
 
 ### Key Metrics to Monitor
@@ -166,11 +244,19 @@ docker-compose exec atlantis atlantis version
     - Terraform state consistency
     - AWS resources in LocalStack
     - S3 bucket accessibility
+    - Compliance validation status
 
 3. **Operation Success**
+
     - Terraform plan/apply success rate
     - Atlantis webhook response times
     - GitHub integration functionality
+    - Compliance validation pass rate
+
+4. **Compliance Metrics**
+    - Violation detection rate
+    - Policy enforcement effectiveness
+    - Resource compliance percentage
 
 ### Alerting Setup
 
@@ -180,6 +266,8 @@ Create monitoring alerts for:
 -   Failed terraform operations
 -   State file corruption
 -   GitHub webhook failures
+-   Compliance validation failures
+-   Policy violations detected
 
 ## 🚨 Incident Response
 
@@ -190,6 +278,7 @@ Create monitoring alerts for:
 -   LocalStack completely down
 -   Atlantis cannot process PRs
 -   State file corrupted
+-   Compliance validation system down
 
 _Response: Immediate action required_
 
@@ -198,6 +287,7 @@ _Response: Immediate action required_
 -   Some AWS services in LocalStack failing
 -   Intermittent Atlantis issues
 -   Single resource deployment failures
+-   Compliance validation not working
 
 _Response: Fix within 2 hours_
 
@@ -206,6 +296,7 @@ _Response: Fix within 2 hours_
 -   Slow response times
 -   Non-critical feature issues
 -   Warning alerts
+-   Minor compliance violations
 
 _Response: Fix within 24 hours_
 
@@ -215,6 +306,8 @@ _Response: Fix within 24 hours_
 
     ```powershell
     .\monitoring\health-check.ps1
+    cd terraform
+    terraform output compliance_validation_status
     ```
 
 2. **Implement Immediate Fix**
@@ -222,6 +315,7 @@ _Response: Fix within 24 hours_
     - Restart services if needed
     - Apply emergency rollback
     - Use backup state if required
+    - Fix compliance violations
 
 3. **Document Incident**
     - Record root cause
@@ -235,6 +329,7 @@ _Response: Fix within 24 hours_
 -   GitHub webhooks use secret token
 -   LocalStack uses test credentials only
 -   No real AWS credentials in LocalStack mode
+-   Compliance validation prevents unauthorized resource types
 
 ### Secret Management
 
@@ -252,6 +347,19 @@ _Response: Fix within 24 hours_
 -   Check for exposed services
 -   Audit Terraform state for sensitive data
 -   Update container images
+-   Review compliance validation rules
+-   Test policy enforcement
+
+### Compliance Security
+
+**Policy Enforcement:**
+
+```powershell
+# Test policy enforcement
+cd terraform
+# Introduce violations and verify they're caught
+terraform plan  # Should fail with clear violation messages
+```
 
 ## 📝 Documentation Updates
 
@@ -261,12 +369,75 @@ Keep these documents current:
 -   README.md status updates
 -   Monitoring configurations
 -   Incident response logs
+-   Compliance validation rules
+-   Policy documentation
 
 ## 🎯 Workshop Completion Checklist
 
--   [ ] Rollback procedures tested
--   [ ] Health monitoring working
--   [ ] Incident response plan ready
--   [ ] Security audit completed
--   [ ] Documentation updated
--   [ ] Team trained on procedures
+-   [x] Rollback procedures tested
+-   [x] Health monitoring working
+-   [x] Incident response plan ready
+-   [x] Security audit completed
+-   [x] Documentation updated
+-   [x] Team trained on procedures
+-   [x] Compliance validation active
+-   [x] Policy enforcement working
+-   [x] Cost controls implemented
+-   [x] GitOps workflow operational
+
+## 🔧 Troubleshooting Guide
+
+### Common Issues
+
+**Compliance Validation Issues:**
+
+```powershell
+# Violations not detected
+cd terraform
+terraform plan  # Check if compliance-validation.tf is loaded
+
+# False positives
+# Review validation rules in compliance-validation.tf
+```
+
+**LocalStack Issues:**
+
+```powershell
+# Service not responding
+docker-compose restart localstack
+curl http://localhost:4566/_localstack/health
+```
+
+**Atlantis Issues:**
+
+```powershell
+# Webhook failures
+docker-compose logs atlantis
+# Check GitHub webhook configuration
+```
+
+### Emergency Procedures
+
+**Complete System Reset:**
+
+```powershell
+# Stop all services
+docker-compose down
+
+# Clear all data
+docker volume rm terraform-atlantis-workshop-2_localstack-data 2>$null
+
+# Restart fresh
+docker-compose up -d
+cd terraform
+.\deploy.ps1
+```
+
+**Compliance System Reset:**
+
+```powershell
+cd terraform
+# Restore compliant configuration
+git checkout -- .
+terraform plan  # Should pass without violations
+```
