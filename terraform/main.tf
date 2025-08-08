@@ -165,6 +165,7 @@ resource "aws_instance" "web" {
   subnet_id              = aws_subnet.public.id
   vpc_security_group_ids = [aws_security_group.web.id]
   key_name               = var.key_pair_name != "" ? var.key_pair_name : null
+  iam_instance_profile   = aws_iam_instance_profile.ec2_profile.name  # Fixed: Added IAM profile
 
   user_data = base64encode(<<-EOF
     #!/bin/bash
