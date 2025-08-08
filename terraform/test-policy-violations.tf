@@ -3,7 +3,7 @@
 
 # Compliant: Using approved instance type
 resource "aws_instance" "test_violation" {
-  ami           = "ami-0abcdef1234567890"
+  ami           = data.aws_ami.amazon_linux.id  # Fixed: Use data source for valid AMI
   instance_type = "t3.micro"  # Fixed: Changed from m5.large to t3.micro
 
   tags = {
@@ -29,6 +29,7 @@ resource "aws_s3_bucket" "test_violation" {
 resource "aws_security_group" "test_violation" {
   name_prefix = "test-violation-sg"
   description = "Security group with policy violations"
+  vpc_id      = aws_vpc.main.id  # Fixed: Added missing VPC reference
 
   ingress {
     from_port   = 22
@@ -46,7 +47,7 @@ resource "aws_security_group" "test_violation" {
 
 # Compliant: All required tags present
 resource "aws_ebs_volume" "test_violation" {
-  availability_zone = "us-west-2a"
+  availability_zone = "ap-southeast-1a"  # Fixed: Changed to match configured region
   size              = 20
 
   tags = {
