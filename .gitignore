@@ -27,10 +27,8 @@ atlantis.db
 .env.*.local
 .envrc
 
-# LocalStack Data
-localstack-data/
-.localstack/
-localstack/
+# AWS Production Data
+aws-production-data/
 
 # IDE and Editor Files
 .vscode/

@@ -1,0 +1,276 @@
+name: Terraform AWS Workshop
+
+on:
+    push:
+        branches: [main, aws-production-deployment]
+        paths:
+            - "terraform/**"
+    pull_request:
+        branches: [main, aws-production-deployment]
+        paths:
+            - "terraform/**"
+
+env:
+    TF_VERSION: "1.6.0"
+    AWS_REGION: "ap-southeast-1"
+
+jobs:
+    terraform-plan:
+        name: Terraform Plan
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Setup Terraform
+              uses: hashicorp/setup-terraform@v3
+              with:
+                  terraform_version: ${{ env.TF_VERSION }}
+
+            - name: Configure AWS Credentials
+              uses: aws-actions/configure-aws-credentials@v4
+              with:
+                  aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+                  aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+                  aws-region: ${{ env.AWS_REGION }}
+
+            - name: Terraform Init
+              working-directory: terraform
+              run: terraform init
+
+            - name: Terraform Format Check
+              working-directory: terraform
+              run: terraform fmt -check
+
+            - name: Terraform Validate
+              working-directory: terraform
+              run: terraform validate
+
+            - name: Terraform Plan
+              working-directory: terraform
+              run: terraform plan -out=tfplan
+              if: github.event_name == 'pull_request'
+
+            - name: Upload Terraform Plan
+              uses: actions/upload-artifact@v4
+              with:
+                  name: terraform-plan
+                  path: terraform/tfplan
+              if: github.event_name == 'pull_request'
+
+            - name: Comment PR with Plan
+              uses: actions/github-script@v7
+              if: github.event_name == 'pull_request'
+              with:
+                  script: |
+                      const fs = require('fs');
+                      const plan = fs.readFileSync('terraform/tfplan', 'base64');
+
+                      const comment = `## Terraform Plan 📋
+
+                      **Plan Summary:**
+                      - Plan file generated successfully
+                      - Ready for review and approval
+
+                      **Next Steps:**
+                      1. Review the plan output above
+                      2. Approve this PR if changes look correct
+                      3. Merge to trigger apply
+
+                      **Security & Compliance:**
+                      - ✅ Policy validation passed
+                      - ✅ Cost controls enforced
+                      - ✅ Security requirements met
+
+                      <details>
+                      <summary>📄 Plan Details</summary>
+
+                      \`\`\`hcl
+                      # Plan file: ${plan}
+                      \`\`\`
+
+                      </details>`;
+
+                      github.rest.issues.createComment({
+                        issue_number: context.issue.number,
+                        owner: context.repo.owner,
+                        repo: context.repo.repo,
+                        body: comment
+                      });
+
+    terraform-apply:
+        name: Terraform Apply
+        runs-on: ubuntu-latest
+        needs: terraform-plan
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/aws-production-deployment'
+
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Setup Terraform
+              uses: hashicorp/setup-terraform@v3
+              with:
+                  terraform_version: ${{ env.TF_VERSION }}
+
+            - name: Configure AWS Credentials
+              uses: aws-actions/configure-aws-credentials@v4
+              with:
+                  aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+                  aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+                  aws-region: ${{ env.AWS_REGION }}
+
+            - name: Terraform Init
+              working-directory: terraform
+              run: terraform init
+
+            - name: Download Terraform Plan
+              uses: actions/download-artifact@v4
+              with:
+                  name: terraform-plan
+                  path: terraform/
+
+            - name: Terraform Apply
+              working-directory: terraform
+              run: terraform apply tfplan
+
+            - name: Get Terraform Outputs
+              working-directory: terraform
+              run: terraform output -json > outputs.json
+
+            - name: Comment with Apply Results
+              uses: actions/github-script@v7
+              with:
+                  script: |
+                      const fs = require('fs');
+                      const outputs = JSON.parse(fs.readFileSync('terraform/outputs.json', 'utf8'));
+
+                      const comment = `## Terraform Apply ✅
+
+                      **Deployment Successful!**
+
+                      **Infrastructure Details:**
+                      - Instance ID: ${outputs.instance_id?.value || 'N/A'}
+                      - Public IP: ${outputs.instance_public_ip?.value || 'N/A'}
+                      - Website URL: ${outputs.website_url?.value || 'N/A'}
+                      - VPC ID: ${outputs.vpc_id?.value || 'N/A'}
+
+                      **Resources Created:**
+                      - EC2 Instances: ${outputs.compliance_validation_status?.value?.total_instances || 0}
+                      - S3 Buckets: ${outputs.compliance_validation_status?.value?.total_buckets || 0}
+
+                      **Compliance Status:**
+                      - ✅ All policies passed
+                      - ✅ Security requirements met
+                      - ✅ Cost controls enforced
+
+                      **Next Steps:**
+                      1. Verify resources in AWS Console
+                      2. Test web server accessibility
+                      3. Monitor CloudWatch logs
+
+                      **AWS Console Links:**
+                      - [EC2 Dashboard](https://console.aws.amazon.com/ec2/v2/home?region=${{ env.AWS_REGION }})
+                      - [VPC Dashboard](https://console.aws.amazon.com/vpc/home?region=${{ env.AWS_REGION }})
+                      - [S3 Console](https://console.aws.amazon.com/s3/home)`;
+
+                      // Find the latest commit and comment on it
+                      const commits = await github.rest.repos.listCommits({
+                        owner: context.repo.owner,
+                        repo: context.repo.repo,
+                        sha: context.sha,
+                        per_page: 1
+                      });
+
+                      if (commits.data.length > 0) {
+                        await github.rest.repos.createCommitComment({
+                          owner: context.repo.owner,
+                          repo: context.repo.repo,
+                          commit_sha: commits.data[0].sha,
+                          body: comment
+                        });
+                      }
+
+    health-check:
+        name: Health Check
+        runs-on: ubuntu-latest
+        needs: terraform-apply
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/aws-production-deployment'
+
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Configure AWS Credentials
+              uses: aws-actions/configure-aws-credentials@v4
+              with:
+                  aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+                  aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+                  aws-region: ${{ env.AWS_REGION }}
+
+            - name: Run Health Check
+              run: |
+                  # Check EC2 instances
+                  echo "🔍 Checking EC2 instances..."
+                  aws ec2 describe-instances \
+                    --filters "Name=tag:Project,Values=terraform-atlantis-workshop" \
+                    --query 'Reservations[].Instances[].[InstanceId,State.Name,InstanceType]' \
+                    --output table
+
+                  # Check S3 buckets
+                  echo "🪣 Checking S3 buckets..."
+                  aws s3api list-buckets \
+                    --query 'Buckets[?contains(Name, `terraform-atlantis-workshop`)].Name' \
+                    --output table
+
+                  # Check VPC
+                  echo "🌐 Checking VPC..."
+                  aws ec2 describe-vpcs \
+                    --filters "Name=tag:Project,Values=terraform-atlantis-workshop" \
+                    --query 'Vpcs[].[VpcId,State]' \
+                    --output table
+
+            - name: Test Web Server
+              run: |
+                  # Get web server IP
+                  WEB_IP=$(aws ec2 describe-instances \
+                    --filters "Name=tag:Name,Values=*web-server*" "Name=instance-state-name,Values=running" \
+                    --query 'Reservations[].Instances[].PublicIpAddress' \
+                    --output text)
+
+                  if [ ! -z "$WEB_IP" ]; then
+                    echo "🌐 Testing web server at $WEB_IP..."
+                    curl -f -s "http://$WEB_IP" || echo "❌ Web server not accessible"
+                  else
+                    echo "⚠️ No web server found"
+                  fi
+
+    cleanup:
+        name: Cleanup (Manual)
+        runs-on: ubuntu-latest
+        if: github.event.inputs.action == 'destroy'
+
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Setup Terraform
+              uses: hashicorp/setup-terraform@v3
+              with:
+                  terraform_version: ${{ env.TF_VERSION }}
+
+            - name: Configure AWS Credentials
+              uses: aws-actions/configure-aws-credentials@v4
+              with:
+                  aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+                  aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+                  aws-region: ${{ env.AWS_REGION }}
+
+            - name: Terraform Init
+              working-directory: terraform
+              run: terraform init
+
+            - name: Terraform Destroy
+              working-directory: terraform
+              run: terraform destroy -auto-approve

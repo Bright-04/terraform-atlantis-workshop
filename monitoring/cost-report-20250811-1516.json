@@ -1,0 +1,292 @@
+{
+  "totals": {
+    "hourly": 0.041695833333333335,
+    "monthly": 30.021000000000004,
+    "daily": 1.0007000000000001
+  },
+  "environment": "LocalStack",
+  "resources": [
+    {
+      "Name": "data.aws_ami.amazon_linux",
+      "Type": "aws_ami",
+      "HourlyCost": 0.0,
+      "DailyCost": 0.0,
+      "MonthlyCost": 0.0,
+      "Attributes": {}
+    },
+    {
+      "Name": "data.aws_availability_zones.available",
+      "Type": "aws_availability_zones",
+      "HourlyCost": 0.0,
+      "DailyCost": 0.0,
+      "MonthlyCost": 0.0,
+      "Attributes": {}
+    },
+    {
+      "Name": "aws_cloudwatch_log_group.application",
+      "Type": "aws_cloudwatch_log_group",
+      "HourlyCost": 0.0,
+      "DailyCost": 0.0,
+      "MonthlyCost": 0.0,
+      "Attributes": {}
+    },
+    {
+      "Name": "aws_ebs_volume.test_violation",
+      "Type": "aws_ebs_volume",
+      "HourlyCost": 0.0,
+      "DailyCost": 0.0,
+      "MonthlyCost": 0.0,
+      "Attributes": {}
+    },
+    {
+      "Name": "aws_iam_instance_profile.ec2_profile",
+      "Type": "aws_iam_instance_profile",
+      "HourlyCost": 0.0,
+      "DailyCost": 0.0,
+      "MonthlyCost": 0.0,
+      "Attributes": {}
+    },
+    {
+      "Name": "aws_iam_role.ec2_role",
+      "Type": "aws_iam_role",
+      "HourlyCost": 0.0,
+      "DailyCost": 0.0,
+      "MonthlyCost": 0.0,
+      "Attributes": {}
+    },
+    {
+      "Name": "aws_iam_role_policy.cloudwatch_logs",
+      "Type": "aws_iam_role_policy",
+      "HourlyCost": 0.0,
+      "DailyCost": 0.0,
+      "MonthlyCost": 0.0,
+      "Attributes": {}
+    },
+    {
+      "Name": "aws_instance.policy_test",
+      "Type": "aws_instance",
+      "HourlyCost": 0.0208,
+      "DailyCost": 0.4992,
+      "MonthlyCost": 14.975999999999999,
+      "Attributes": {
+        "instance_type": "t3.small"
+      }
+    },
+    {
+      "Name": "aws_instance.test_violation",
+      "Type": "aws_instance",
+      "HourlyCost": 0.0104,
+      "DailyCost": 0.2496,
+      "MonthlyCost": 7.4879999999999995,
+      "Attributes": {
+        "instance_type": "t3.micro"
+      }
+    },
+    {
+      "Name": "aws_instance.web",
+      "Type": "aws_instance",
+      "HourlyCost": 0.0104,
+      "DailyCost": 0.2496,
+      "MonthlyCost": 7.4879999999999995,
+      "Attributes": {
+        "instance_type": "t3.micro"
+      }
+    },
+    {
+      "Name": "aws_internet_gateway.main",
+      "Type": "aws_internet_gateway",
+      "HourlyCost": 0.0,
+      "DailyCost": 0.0,
+      "MonthlyCost": 0.0,
+      "Attributes": {}
+    },
+    {
+      "Name": "aws_route_table.public",
+      "Type": "aws_route_table",
+      "HourlyCost": 0.0,
+      "DailyCost": 0.0,
+      "MonthlyCost": 0.0,
+      "Attributes": {}
+    },
+    {
+      "Name": "aws_route_table_association.public",
+      "Type": "aws_route_table_association",
+      "HourlyCost": 0.0,
+      "DailyCost": 0.0,
+      "MonthlyCost": 0.0,
+      "Attributes": {}
+    },
+    {
+      "Name": "aws_s3_bucket.encrypted_test",
+      "Type": "aws_s3_bucket",
+      "HourlyCost": 3.194444444444444E-05,
+      "DailyCost": 0.0007666666666666666,
+      "MonthlyCost": 0.022999999999999996,
+      "Attributes": {
+        "storage_gb": 1
+      }
+    },
+    {
+      "Name": "aws_s3_bucket.test_violation",
+      "Type": "aws_s3_bucket",
+      "HourlyCost": 3.194444444444444E-05,
+      "DailyCost": 0.0007666666666666666,
+      "MonthlyCost": 0.022999999999999996,
+      "Attributes": {
+        "storage_gb": 1
+      }
+    },
+    {
+      "Name": "aws_s3_bucket.workshop",
+      "Type": "aws_s3_bucket",
+      "HourlyCost": 3.194444444444444E-05,
+      "DailyCost": 0.0007666666666666666,
+      "MonthlyCost": 0.022999999999999996,
+      "Attributes": {
+        "storage_gb": 1
+      }
+    },
+    {
+      "Name": "aws_s3_bucket_public_access_block.encrypted_test",
+      "Type": "aws_s3_bucket_public_access_block",
+      "HourlyCost": 0.0,
+      "DailyCost": 0.0,
+      "MonthlyCost": 0.0,
+      "Attributes": {}
+    },
+    {
+      "Name": "aws_s3_bucket_public_access_block.test_violation",
+      "Type": "aws_s3_bucket_public_access_block",
+      "HourlyCost": 0.0,
+      "DailyCost": 0.0,
+      "MonthlyCost": 0.0,
+      "Attributes": {}
+    },
+    {
+      "Name": "aws_s3_bucket_public_access_block.workshop",
+      "Type": "aws_s3_bucket_public_access_block",
+      "HourlyCost": 0.0,
+      "DailyCost": 0.0,
+      "MonthlyCost": 0.0,
+      "Attributes": {}
+    },
+    {
+      "Name": "aws_s3_bucket_server_side_encryption_configuration.encrypted_test",
+      "Type": "aws_s3_bucket_server_side_encryption_configuration",
+      "HourlyCost": 0.0,
+      "DailyCost": 0.0,
+      "MonthlyCost": 0.0,
+      "Attributes": {}
+    },
+    {
+      "Name": "aws_s3_bucket_server_side_encryption_configuration.test_violation",
+      "Type": "aws_s3_bucket_server_side_encryption_configuration",
+      "HourlyCost": 0.0,
+      "DailyCost": 0.0,
+      "MonthlyCost": 0.0,
+      "Attributes": {}
+    },
+    {
+      "Name": "aws_s3_bucket_server_side_encryption_configuration.workshop",
+      "Type": "aws_s3_bucket_server_side_encryption_configuration",
+      "HourlyCost": 0.0,
+      "DailyCost": 0.0,
+      "MonthlyCost": 0.0,
+      "Attributes": {}
+    },
+    {
+      "Name": "aws_s3_bucket_versioning.workshop",
+      "Type": "aws_s3_bucket_versioning",
+      "HourlyCost": 0.0,
+      "DailyCost": 0.0,
+      "MonthlyCost": 0.0,
+      "Attributes": {}
+    },
+    {
+      "Name": "aws_security_group.policy_test",
+      "Type": "aws_security_group",
+      "HourlyCost": 0.0,
+      "DailyCost": 0.0,
+      "MonthlyCost": 0.0,
+      "Attributes": {}
+    },
+    {
+      "Name": "aws_security_group.test_violation",
+      "Type": "aws_security_group",
+      "HourlyCost": 0.0,
+      "DailyCost": 0.0,
+      "MonthlyCost": 0.0,
+      "Attributes": {}
+    },
+    {
+      "Name": "aws_security_group.web",
+      "Type": "aws_security_group",
+      "HourlyCost": 0.0,
+      "DailyCost": 0.0,
+      "MonthlyCost": 0.0,
+      "Attributes": {}
+    },
+    {
+      "Name": "aws_subnet.private",
+      "Type": "aws_subnet",
+      "HourlyCost": 0.0,
+      "DailyCost": 0.0,
+      "MonthlyCost": 0.0,
+      "Attributes": {}
+    },
+    {
+      "Name": "aws_subnet.public",
+      "Type": "aws_subnet",
+      "HourlyCost": 0.0,
+      "DailyCost": 0.0,
+      "MonthlyCost": 0.0,
+      "Attributes": {}
+    },
+    {
+      "Name": "aws_vpc.main",
+      "Type": "aws_vpc",
+      "HourlyCost": 0.0,
+      "DailyCost": 0.0,
+      "MonthlyCost": 0.0,
+      "Attributes": {}
+    },
+    {
+      "Name": "null_resource.instance_type_validation",
+      "Type": "null_resource",
+      "HourlyCost": 0.0,
+      "DailyCost": 0.0,
+      "MonthlyCost": 0.0,
+      "Attributes": {}
+    },
+    {
+      "Name": "null_resource.required_tags_validation",
+      "Type": "null_resource",
+      "HourlyCost": 0.0,
+      "DailyCost": 0.0,
+      "MonthlyCost": 0.0,
+      "Attributes": {}
+    },
+    {
+      "Name": "null_resource.s3_naming_validation",
+      "Type": "null_resource",
+      "HourlyCost": 0.0,
+      "DailyCost": 0.0,
+      "MonthlyCost": 0.0,
+      "Attributes": {}
+    },
+    {
+      "Name": "random_string.bucket_suffix",
+      "Type": "random_string",
+      "HourlyCost": 0.0,
+      "DailyCost": 0.0,
+      "MonthlyCost": 0.0,
+      "Attributes": {}
+    }
+  ],
+  "timestamp": "2025-08-11 15:16:12",
+  "budget": {
+    "limit": 50.0,
+    "used_percentage": 60.04200000000001,
+    "status": "OK"
+  }
+}

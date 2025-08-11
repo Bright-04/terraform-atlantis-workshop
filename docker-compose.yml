@@ -1,58 +1,42 @@
-services:
-    localstack:
-        container_name: localstack_workshop
-        image: localstack/localstack:latest
-        ports:
-            - "4566:4566" # LocalStack Gateway
-            - "4510-4559:4510-4559" # External services port range
-        environment:
-            - SERVICES=ec2,s3,rds,iam,cloudwatch,logs,sts,lambda,apigateway
-            - DEBUG=1
-            - PERSISTENCE=0
-            - LAMBDA_EXECUTOR=local
-            - AWS_DEFAULT_REGION=us-east-1
-            - AWS_ACCESS_KEY_ID=test
-            - AWS_SECRET_ACCESS_KEY=test
-        networks:
-            - localstack-network
+version: "3.8"
 
+services:
     atlantis:
-        container_name: atlantis_workshop
-        build:
-            context: .
-            dockerfile: Dockerfile.atlantis
+        image: runatlantis/atlantis:latest
+        container_name: atlantis
         ports:
             - "4141:4141"
-        command: ["atlantis", "server", "--repo-config", "/etc/atlantis/repos.yaml"]
-        env_file:
-            - .env
         environment:
-            # AWS/LocalStack Configuration - Override for container networking
-            - AWS_DEFAULT_REGION=us-east-1
-            - AWS_ACCESS_KEY_ID=test
-            - AWS_SECRET_ACCESS_KEY=test
-            - AWS_ENDPOINT_URL_EC2=http://localstack:4566
-            - AWS_ENDPOINT_URL_S3=http://localstack:4566
-            - AWS_ENDPOINT_URL_IAM=http://localstack:4566
-            - AWS_ENDPOINT_URL_STS=http://localstack:4566
-            # Atlantis Configuration
-            - ATLANTIS_ALLOWED_OVERRIDES=workflow,apply_requirements,delete_source_branch_on_merge
-            - ATLANTIS_ENABLE_POLICY_CHECKS=false
-            - ATLANTIS_ALLOW_CUSTOM_WORKFLOWS=true
-            - ATLANTIS_REQUIRE_APPROVAL=false
-            - ATLANTIS_REQUIRE_MERGEABLE=false
-            - ATLANTIS_REPO_CONFIG=/etc/atlantis/repos.yaml
+            - ATLANTIS_GH_USER=${ATLANTIS_GH_USER}
+            - ATLANTIS_GH_TOKEN=${ATLANTIS_GH_TOKEN}
+            - ATLANTIS_GH_WEBHOOK_SECRET=${ATLANTIS_GH_WEBHOOK_SECRET}
+            - ATLANTIS_REPO_ALLOWLIST=${ATLANTIS_REPO_ALLOWLIST}
+            - ATLANTIS_ATLANTIS_URL=${ATLANTIS_ATLANTIS_URL}
+            - ATLANTIS_LOG_LEVEL=${ATLANTIS_LOG_LEVEL}
+            - ATLANTIS_DEFAULT_TF_VERSION=${ATLANTIS_DEFAULT_TF_VERSION}
+            - ATLANTIS_ENABLE_POLICY_CHECKS=${ATLANTIS_ENABLE_POLICY_CHECKS}
+            - ATLANTIS_ENABLE_DIFF_MARKDOWN_FORMAT=${ATLANTIS_ENABLE_DIFF_MARKDOWN_FORMAT}
+            - ATLANTIS_DISABLE_APPLY_ALL=${ATLANTIS_DISABLE_APPLY_ALL}
+            - ATLANTIS_REQUIRE_APPROVAL=${ATLANTIS_REQUIRE_APPROVAL}
+            - ATLANTIS_REQUIRE_MERGEABLE=${ATLANTIS_REQUIRE_MERGEABLE}
+            - ATLANTIS_ENABLE_REGEXP_CMD=${ATLANTIS_ENABLE_REGEXP_CMD}
+            - ATLANTIS_SILENCE_FORK_PR_ERRORS=${ATLANTIS_SILENCE_FORK_PR_ERRORS}
+            - ATLANTIS_WRITE_GIT_CREDS=${ATLANTIS_WRITE_GIT_CREDS}
+            - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+            - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+            - AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION}
         volumes:
-            - ./atlantis:/atlantis
-            - ./terraform:/terraform
-            - ./scripts:/scripts
-            - ./atlantis.yaml:/atlantis.yaml
-            - ./server-atlantis.yaml:/etc/atlantis/repos.yaml
-        depends_on:
-            - localstack
+            - ./terraform:/workspace/terraform
+            - ./atlantis.yaml:/workspace/atlantis.yaml
+            - atlantis-data:/atlantis
+        command: server --atlantis-url=https://your-domain:4141
+        restart: unless-stopped
         networks:
-            - localstack-network
+            - atlantis-network
+
+volumes:
+    atlantis-data:
 
 networks:
-    localstack-network:
+    atlantis-network:
         driver: bridge

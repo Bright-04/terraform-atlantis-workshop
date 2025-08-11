@@ -2,7 +2,40 @@ version: 3
 projects:
     - name: terraform-atlantis-workshop
       dir: terraform
+      workspace: default
       terraform_version: v1.6.0
-# Using default workflow for maximum reliability
-# Compliance validation is now handled by Terraform validation blocks and outputs
-# This approach works 100% of the time with both LocalStack and real AWS
+      autoplan:
+          when_modified: ["*.tf", "../.github/workflows/*.yml"]
+          enabled: true
+      apply_requirements: [approved, mergeable]
+      workflow: custom
+      custom_apply_workflow: aws-production
+      custom_plan_workflow: aws-production
+
+workflows:
+    aws-production:
+        plan:
+            steps:
+                - run: terraform init
+                - run: terraform plan -out=tfplan
+                - run: terraform show tfplan
+        apply:
+            steps:
+                - run: terraform init
+                - run: terraform apply tfplan
+                - run: terraform output -json > outputs.json
+                - run: |
+                      echo "## Terraform Apply Results" >> $GITHUB_STEP_SUMMARY
+                      echo "Infrastructure deployed successfully!" >> $GITHUB_STEP_SUMMARY
+                      if [ -f outputs.json ]; then
+                        echo "Outputs:" >> $GITHUB_STEP_SUMMARY
+                        cat outputs.json >> $GITHUB_STEP_SUMMARY
+                      fi
+
+# Repository settings
+repo_config:
+    - id: /.*/
+      branch: /.*/
+      apply_requirements: [approved, mergeable]
+      allowed_overrides: [apply_requirements, workflow]
+      allow_custom_workflows: true

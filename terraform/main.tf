@@ -1,5 +1,5 @@
-# Terraform configuration for local development (not for Atlantis)
-# This file uses localhost endpoints for direct development work
+# Terraform configuration for AWS Production Deployment
+# This file uses real AWS infrastructure instead of LocalStack
 
 terraform {
   required_version = ">= 1.6.0"
@@ -15,44 +15,27 @@ terraform {
   }
 }
 
-# AWS Provider configuration for LocalStack (local development)
+# AWS Provider configuration for Production
 provider "aws" {
-  region                      = var.region
-  access_key                  = "test"
-  secret_key                  = "test"
-  skip_credentials_validation = true
-  skip_metadata_api_check     = true
-  skip_requesting_account_id  = true
-  s3_use_path_style           = true
-
-  endpoints {
-    ec2            = "http://localstack:4566"
-    s3             = "http://localstack:4566"
-    rds            = "http://localstack:4566"
-    iam            = "http://localstack:4566"
-    cloudwatch     = "http://localstack:4566"
-    logs           = "http://localstack:4566"
-    sts            = "http://localstack:4566"
-    lambda         = "http://localstack:4566"
-    apigateway     = "http://localstack:4566"
-  }
+  region = var.region
 
   default_tags {
     tags = {
       Environment = var.environment
       Project     = var.project_name
       ManagedBy   = "Terraform"
-      Provider    = "LocalStack"
+      Provider    = "AWS"
+      CostCenter  = "production"
     }
   }
 }
 
-# Data source for availability zones (LocalStack)
+# Data source for availability zones (AWS)
 data "aws_availability_zones" "available" {
   state = "available"
 }
 
-# Data source for AMI (LocalStack uses a mock AMI)
+# Data source for Amazon Linux 2 AMI (AWS)
 data "aws_ami" "amazon_linux" {
   most_recent = true
   owners      = ["amazon"]
@@ -182,31 +165,40 @@ resource "aws_instance" "web" {
   subnet_id              = aws_subnet.public.id
   vpc_security_group_ids = [aws_security_group.web.id]
   key_name               = var.key_pair_name != "" ? var.key_pair_name : null
+  iam_instance_profile   = aws_iam_instance_profile.ec2_profile.name  # Fixed: Added IAM profile
 
   user_data = base64encode(<<-EOF
     #!/bin/bash
-    echo "Hello from ${var.project_name}!" > /tmp/hello.txt
-    echo "This instance was created with Terraform on LocalStack." >> /tmp/hello.txt
+    yum update -y
+    yum install -y httpd
+    systemctl start httpd
+    systemctl enable httpd
+    echo "<h1>Hello from ${var.project_name} on AWS!</h1>" > /var/www/html/index.html
+    echo "<p>This instance was created with Terraform on AWS Production.</p>" >> /var/www/html/index.html
+    echo "<p>Instance ID: $(curl -s http://169.254.169.254/latest/meta-data/instance-id)</p>" >> /var/www/html/index.html
+    echo "<p>Availability Zone: $(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone)</p>" >> /var/www/html/index.html
   EOF
   )
 
   tags = {
     Name        = "${var.project_name}-web-server"
     Environment = var.environment
+    Project     = var.project_name
     Owner       = "workshop-participant"
-    TestTag     = "atlantis-workflow-complete"
+    TestTag     = "aws-production-deployment"
     Timestamp   = formatdate("YYYY-MM-DD-hhmm", timestamp())
-    CostCenter  = "workshop-training"
+    CostCenter  = "production"
+    Backup      = "daily"
   }
 }
 
-# S3 Bucket for testing
+# S3 Bucket for production data
 resource "aws_s3_bucket" "workshop" {
   bucket = "${var.project_name}-${var.s3_bucket_suffix}"
 
   tags = {
     Name       = "${var.project_name}-${var.s3_bucket_suffix}"
-    CostCenter = "workshop-training"
+    CostCenter = "production"
   }
 }
 
@@ -218,25 +210,47 @@ resource "aws_s3_bucket_versioning" "workshop" {
   }
 }
 
-# Test EC2 instance with policy violations
+# S3 Bucket encryption
+resource "aws_s3_bucket_server_side_encryption_configuration" "workshop" {
+  bucket = aws_s3_bucket.workshop.id
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
+  }
+}
+
+# S3 Bucket public access block
+resource "aws_s3_bucket_public_access_block" "workshop" {
+  bucket = aws_s3_bucket.workshop.id
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
+# Test EC2 instance with policy compliance
 resource "aws_instance" "policy_test" {
   ami                    = data.aws_ami.amazon_linux.id
-  instance_type          = "t3.small"  # Fixed: Changed from m5.large to t3.small
+  instance_type          = "t3.small"  # Compliant instance type
   subnet_id              = aws_subnet.public.id
   vpc_security_group_ids = [aws_security_group.policy_test.id]
 
   tags = {
-    Name        = "test-instance-no-required-tags"
-    Environment = "workshop"
-    Project     = "terraform-atlantis-workshop"
-    CostCenter  = "workshop-training"
+    Name        = "test-instance-compliant"
+    Environment = var.environment
+    Project     = var.project_name
+    CostCenter  = "production"
+    Backup      = "daily"
   }
 }
 
-# Security group with overly permissive rules
+# Security group with restricted access
 resource "aws_security_group" "policy_test" {
   name        = "policy-test-sg"
-  description = "Security group that should trigger policy violations"
+  description = "Security group with restricted access for compliance"
   vpc_id      = aws_vpc.main.id
 
   ingress {
@@ -256,22 +270,43 @@ resource "aws_security_group" "policy_test" {
 
   tags = {
     Name        = "policy-test-sg"
-    Environment = "workshop"
-    Project     = "terraform-atlantis-workshop"
-    CostCenter  = "workshop-training"
+    Environment = var.environment
+    Project     = var.project_name
+    CostCenter  = "production"
   }
 }
 
-# S3 bucket without encryption - policy violation  
-resource "aws_s3_bucket" "unencrypted_test" {
-  bucket = "terraform-atlantis-workshop-unencrypted-${random_string.bucket_suffix.result}"
+# S3 bucket with encryption - compliant configuration
+resource "aws_s3_bucket" "encrypted_test" {
+  bucket = "terraform-atlantis-workshop-encrypted-${random_string.bucket_suffix.result}"
 
   tags = {
-    Name        = "unencrypted-test-bucket"
-    Environment = "workshop"
-    Project     = "terraform-atlantis-workshop"
-    CostCenter  = "workshop-training"
+    Name        = "encrypted-test-bucket"
+    Environment = var.environment
+    Project     = var.project_name
+    CostCenter  = "production"
   }
+}
+
+# S3 Bucket encryption for test bucket
+resource "aws_s3_bucket_server_side_encryption_configuration" "encrypted_test" {
+  bucket = aws_s3_bucket.encrypted_test.id
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
+  }
+}
+
+# S3 Bucket public access block for test bucket
+resource "aws_s3_bucket_public_access_block" "encrypted_test" {
+  bucket = aws_s3_bucket.encrypted_test.id
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
 }
 
 # Random string for bucket suffix
@@ -279,4 +314,70 @@ resource "random_string" "bucket_suffix" {
   length  = 8
   special = false
   upper   = false
+}
+
+# CloudWatch Log Group for application logs
+resource "aws_cloudwatch_log_group" "application" {
+  name              = "/aws/ec2/${var.project_name}"
+  retention_in_days = 7
+
+  tags = {
+    Name        = "${var.project_name}-application-logs"
+    Environment = var.environment
+    Project     = var.project_name
+    CostCenter  = "production"
+  }
+}
+
+# IAM Role for EC2 instances
+resource "aws_iam_role" "ec2_role" {
+  name = "${var.project_name}-ec2-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "ec2.amazonaws.com"
+        }
+      }
+    ]
+  })
+
+  tags = {
+    Name        = "${var.project_name}-ec2-role"
+    Environment = var.environment
+    Project     = var.project_name
+    CostCenter  = "production"
+  }
+}
+
+# IAM Instance Profile
+resource "aws_iam_instance_profile" "ec2_profile" {
+  name = "${var.project_name}-ec2-profile"
+  role = aws_iam_role.ec2_role.name
+}
+
+# IAM Policy for CloudWatch Logs
+resource "aws_iam_role_policy" "cloudwatch_logs" {
+  name = "${var.project_name}-cloudwatch-logs"
+  role = aws_iam_role.ec2_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents",
+          "logs:DescribeLogStreams"
+        ]
+        Resource = ["*"]
+      }
+    ]
+  })
 }
