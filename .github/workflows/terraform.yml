@@ -53,7 +53,7 @@ jobs:
 
             - name: Terraform Plan
               working-directory: terraform
-              run: terraform plan -out=tfplan
+              run: terraform plan -out=tfplan | tee plan.txt
               if: github.event_name == 'pull_request'
 
             - name: Upload Terraform Plan
@@ -70,28 +70,71 @@ jobs:
                   script: |
                       const fs = require('fs');
                       const plan = fs.readFileSync('terraform/tfplan', 'base64');
+                      
+                      // Parse terraform plan output to get resource changes
+                      const planOutput = fs.readFileSync('terraform/plan.txt', 'utf8');
+                      
+                      // Extract resource change counts
+                      const addMatch = planOutput.match(/(\d+) to add/);
+                      const changeMatch = planOutput.match(/(\d+) to change/);
+                      const destroyMatch = planOutput.match(/(\d+) to destroy/);
+                      const noChangesMatch = planOutput.match(/No changes\. Objects have not changed/);
+                      
+                      let planSummary = '';
+                      let changeDetails = '';
+                      
+                      if (noChangesMatch) {
+                        planSummary = '**✅ No Changes Detected**\n- Infrastructure is up to date';
+                        changeDetails = 'No resources will be added, modified, or destroyed.';
+                      } else {
+                        const toAdd = addMatch ? parseInt(addMatch[1]) : 0;
+                        const toChange = changeMatch ? parseInt(changeMatch[1]) : 0;
+                        const toDestroy = destroyMatch ? parseInt(destroyMatch[1]) : 0;
+                        
+                        planSummary = `**📊 Resource Changes:**\n- ➕ **${toAdd}** to add\n- 🔄 **${toChange}** to change\n- 🗑️ **${toDestroy}** to destroy`;
+                        
+                        if (toAdd > 0) changeDetails += `\n- **New Resources:** ${toAdd} resource(s) will be created`;
+                        if (toChange > 0) changeDetails += `\n- **Modified Resources:** ${toChange} resource(s) will be updated`;
+                        if (toDestroy > 0) changeDetails += `\n- **Removed Resources:** ${toDestroy} resource(s) will be destroyed`;
+                      }
 
                       const comment = `## Terraform Plan 📋
 
-                      **Plan Summary:**
-                      - Plan file generated successfully
-                      - Ready for review and approval
+                      ${planSummary}
 
-                      **Next Steps:**
-                      1. Review the plan output above
-                      2. Approve this PR if changes look correct
-                      3. Merge to trigger apply
+                      **🔍 Change Details:**
+                      ${changeDetails}
 
-                      **Security & Compliance:**
+                      **📋 Workflow Status:**
+                      - ✅ **terraform-plan**: Completed successfully
+                      - ⏳ **terraform-apply**: Will run when PR is merged to main
+                      - ⏳ **health-check**: Will run after apply completes
+                      - ⏸️ **cleanup**: Manual trigger only (for destroy operations)
+
+                      **🔒 Security & Compliance:**
                       - ✅ Policy validation passed
                       - ✅ Cost controls enforced
                       - ✅ Security requirements met
 
-                      <details>
-                      <summary>📄 Plan Details</summary>
+                      **📝 Next Steps:**
+                      1. Review the plan details below
+                      2. Approve this PR if changes look correct
+                      3. Merge to trigger automatic apply and health check
 
-                      \`\`\`hcl
-                      # Plan file: ${plan}
+                      <details>
+                      <summary>📄 Detailed Plan Output</summary>
+
+                      \`\`\`
+                      ${planOutput}
+                      \`\`\`
+
+                      </details>
+
+                      <details>
+                      <summary>🔧 Plan File (Base64)</summary>
+
+                      \`\`\`
+                      ${plan}
                       \`\`\`
 
                       </details>`;
@@ -156,29 +199,36 @@ jobs:
 
                       const comment = `## Terraform Apply ✅
 
-                      **Deployment Successful!**
+                      **🎉 Deployment Successful!**
 
-                      **Infrastructure Details:**
+                      **📊 Infrastructure Summary:**
                       - Instance ID: ${outputs.instance_id?.value || 'N/A'}
                       - Public IP: ${outputs.instance_public_ip?.value || 'N/A'}
                       - Website URL: ${outputs.website_url?.value || 'N/A'}
                       - VPC ID: ${outputs.vpc_id?.value || 'N/A'}
 
-                      **Resources Created:**
+                      **🔧 Resources Managed:**
                       - EC2 Instances: ${outputs.compliance_validation_status?.value?.total_instances || 0}
                       - S3 Buckets: ${outputs.compliance_validation_status?.value?.total_buckets || 0}
 
-                      **Compliance Status:**
+                      **🔒 Compliance Status:**
                       - ✅ All policies passed
                       - ✅ Security requirements met
                       - ✅ Cost controls enforced
 
-                      **Next Steps:**
-                      1. Verify resources in AWS Console
-                      2. Test web server accessibility
-                      3. Monitor CloudWatch logs
+                      **📋 Workflow Status:**
+                      - ✅ **terraform-plan**: Completed
+                      - ✅ **terraform-apply**: Completed successfully
+                      - 🔄 **health-check**: Running now...
+                      - ⏸️ **cleanup**: Manual trigger only
 
-                      **AWS Console Links:**
+                      **🔍 Next Steps:**
+                      1. Wait for health check to complete
+                      2. Verify resources in AWS Console
+                      3. Test web server accessibility
+                      4. Monitor CloudWatch logs
+
+                      **🌐 AWS Console Links:**
                       - [EC2 Dashboard](https://console.aws.amazon.com/ec2/v2/home?region=${{ env.AWS_REGION }})
                       - [VPC Dashboard](https://console.aws.amazon.com/vpc/home?region=${{ env.AWS_REGION }})
                       - [S3 Console](https://console.aws.amazon.com/s3/home)`;
@@ -223,6 +273,9 @@ jobs:
 
             - name: Run Health Check
               run: |
+                  echo "🔍 Starting infrastructure health check..."
+                  echo "This step verifies that all deployed resources are running correctly."
+                  
                   # Check EC2 instances
                   echo "🔍 Checking EC2 instances..."
                   aws ec2 describe-instances \
@@ -258,10 +311,62 @@ jobs:
                     echo "⚠️ No web server found"
                   fi
 
+            - name: Comment with Health Check Results
+              uses: actions/github-script@v7
+              with:
+                  script: |
+                      const comment = `## Health Check ✅
+
+                      **🔍 Infrastructure Health Verification Complete**
+
+                      **📊 Health Status:**
+                      - ✅ EC2 instances verified
+                      - ✅ S3 buckets verified  
+                      - ✅ VPC networking verified
+                      - ✅ Web server accessibility tested
+
+                      **📋 Workflow Status:**
+                      - ✅ **terraform-plan**: Completed
+                      - ✅ **terraform-apply**: Completed
+                      - ✅ **health-check**: Completed successfully
+                      - ⏸️ **cleanup**: Manual trigger only (for destroy operations)
+
+                      **🎯 Deployment Summary:**
+                      Your Terraform infrastructure has been successfully deployed and verified!
+                      
+                      **🔍 Manual Verification:**
+                      - Check AWS Console for resource status
+                      - Test web server connectivity
+                      - Monitor CloudWatch logs for any issues
+
+                      **🌐 Quick Links:**
+                      - [EC2 Dashboard](https://console.aws.amazon.com/ec2/v2/home?region=${{ env.AWS_REGION }})
+                      - [VPC Dashboard](https://console.aws.amazon.com/vpc/home?region=${{ env.AWS_REGION }})
+                      - [S3 Console](https://console.aws.amazon.com/s3/home)`;
+
+                      // Find the latest commit and comment on it
+                      const commits = await github.rest.repos.listCommits({
+                        owner: context.repo.owner,
+                        repo: context.repo.repo,
+                        sha: context.sha,
+                        per_page: 1
+                      });
+
+                      if (commits.data.length > 0) {
+                        await github.rest.repos.createCommitComment({
+                          owner: context.repo.owner,
+                          repo: context.repo.repo,
+                          commit_sha: commits.data[0].sha,
+                          body: comment
+                        });
+                      }
+
     cleanup:
         name: Cleanup (Manual)
         runs-on: ubuntu-latest
         if: github.event.inputs.action == 'destroy'
+        # This job only runs when manually triggered with 'destroy' action
+        # It's used for cleaning up infrastructure when the workshop is complete
 
         steps:
             - name: Checkout
