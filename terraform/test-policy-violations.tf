@@ -48,6 +48,14 @@ resource "aws_s3_bucket_public_access_block" "test_violation" {
   restrict_public_buckets = true
 }
 
+# S3 Bucket versioning for test violation bucket
+resource "aws_s3_bucket_versioning" "test_violation" {
+  bucket = aws_s3_bucket.test_violation.id
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
 # Compliant: All required tags present
 resource "aws_security_group" "test_violation" {
   name_prefix = "test-violation-sg"

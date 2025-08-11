@@ -1,20 +1,6 @@
 # Terraform configuration for AWS Production Deployment
 # This file uses real AWS infrastructure instead of LocalStack
 
-terraform {
-  required_version = ">= 1.6.0"
-  required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "~> 5.100"
-    }
-    null = {
-      source  = "hashicorp/null"
-      version = "~> 3.2"
-    }
-  }
-}
-
 # AWS Provider configuration for Production
 provider "aws" {
   region = var.region
@@ -307,6 +293,14 @@ resource "aws_s3_bucket_public_access_block" "encrypted_test" {
   block_public_policy     = true
   ignore_public_acls      = true
   restrict_public_buckets = true
+}
+
+# S3 Bucket versioning for encrypted test bucket
+resource "aws_s3_bucket_versioning" "encrypted_test" {
+  bucket = aws_s3_bucket.encrypted_test.id
+  versioning_configuration {
+    status = "Enabled"
+  }
 }
 
 # Random string for bucket suffix

@@ -290,13 +290,21 @@ function Test-ComplianceValidation {
     if (Test-Path "terraform\terraform.tfstate") {
         try {
             Set-Location terraform
-            $complianceOutput = terraform output compliance_validation_status 2>$null | ConvertFrom-Json
+            
+            # Get compliance output in JSON format
+            $complianceOutput = terraform output -json compliance_validation_status 2>$null | ConvertFrom-Json
             
             if ($complianceOutput) {
                 Write-Host "   ✅ Compliance validation active" -ForegroundColor Green
                 Write-Host "   Total instances: $($complianceOutput.total_instances)" -ForegroundColor Gray
                 Write-Host "   Total buckets: $($complianceOutput.total_buckets)" -ForegroundColor Gray
                 Write-Host "   Message: $($complianceOutput.message)" -ForegroundColor Gray
+                
+                if ($Detailed) {
+                    Write-Host "   Allowed instance types: $($complianceOutput.allowed_instance_types -join ', ')" -ForegroundColor Gray
+                    Write-Host "   Required tags: $($complianceOutput.required_tags -join ', ')" -ForegroundColor Gray
+                    Write-Host "   Recommended tags: $($complianceOutput.recommended_tags -join ', ')" -ForegroundColor Gray
+                }
             }
             else {
                 Write-Host "   ⚠️ Compliance validation not configured" -ForegroundColor Yellow
