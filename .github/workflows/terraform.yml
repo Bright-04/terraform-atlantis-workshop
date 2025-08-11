@@ -305,10 +305,19 @@ jobs:
               with:
                   name: terraform-plan
                   path: terraform/
+              continue-on-error: true
 
-            - name: Terraform Apply
+            - name: Terraform Plan and Apply
               working-directory: terraform
-              run: terraform apply tfplan
+              run: |
+                  if [ -f "tfplan" ]; then
+                      echo "Using existing plan file"
+                      terraform apply tfplan
+                  else
+                      echo "No plan file found, creating new plan and applying"
+                      terraform plan -out=tfplan
+                      terraform apply tfplan
+                  fi
 
             - name: Get Terraform Outputs
               working-directory: terraform
