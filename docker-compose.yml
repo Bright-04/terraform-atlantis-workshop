@@ -1,0 +1,42 @@
+version: "3.8"
+
+services:
+    atlantis:
+        image: runatlantis/atlantis:latest
+        container_name: atlantis
+        ports:
+            - "4141:4141"
+        environment:
+            - ATLANTIS_GH_USER=${ATLANTIS_GH_USER}
+            - ATLANTIS_GH_TOKEN=${ATLANTIS_GH_TOKEN}
+            - ATLANTIS_GH_WEBHOOK_SECRET=${ATLANTIS_GH_WEBHOOK_SECRET}
+            - ATLANTIS_REPO_ALLOWLIST=${ATLANTIS_REPO_ALLOWLIST}
+            - ATLANTIS_ATLANTIS_URL=${ATLANTIS_ATLANTIS_URL}
+            - ATLANTIS_LOG_LEVEL=${ATLANTIS_LOG_LEVEL}
+            - ATLANTIS_DEFAULT_TF_VERSION=${ATLANTIS_DEFAULT_TF_VERSION}
+            - ATLANTIS_ENABLE_POLICY_CHECKS=${ATLANTIS_ENABLE_POLICY_CHECKS}
+            - ATLANTIS_ENABLE_DIFF_MARKDOWN_FORMAT=${ATLANTIS_ENABLE_DIFF_MARKDOWN_FORMAT}
+            - ATLANTIS_DISABLE_APPLY_ALL=${ATLANTIS_DISABLE_APPLY_ALL}
+            - ATLANTIS_REQUIRE_APPROVAL=${ATLANTIS_REQUIRE_APPROVAL}
+            - ATLANTIS_REQUIRE_MERGEABLE=${ATLANTIS_REQUIRE_MERGEABLE}
+            - ATLANTIS_ENABLE_REGEXP_CMD=${ATLANTIS_ENABLE_REGEXP_CMD}
+            - ATLANTIS_SILENCE_FORK_PR_ERRORS=${ATLANTIS_SILENCE_FORK_PR_ERRORS}
+            - ATLANTIS_WRITE_GIT_CREDS=${ATLANTIS_WRITE_GIT_CREDS}
+            - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+            - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+            - AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION}
+        volumes:
+            - ./terraform:/workspace/terraform
+            - ./atlantis.yaml:/workspace/atlantis.yaml
+            - atlantis-data:/atlantis
+        command: server --atlantis-url=http://localhost:4141
+        restart: unless-stopped
+        networks:
+            - atlantis-network
+
+volumes:
+    atlantis-data:
+
+networks:
+    atlantis-network:
+        driver: bridge
