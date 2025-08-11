@@ -1,5 +1,17 @@
-# Production Deployment Script for Terraform Atlantis Workshop
+# =============================================================================
+# 03 - Production Infrastructure Deployment Script
+# =============================================================================
 # This script deploys the complete production infrastructure to AWS
+# 
+# Workflow Order:
+# 1. 01-validate-environment.ps1
+# 2. 02-setup-github-actions.ps1
+# 3. 03-deploy-infrastructure.ps1 (this script)
+# 4. 04-health-monitoring.ps1
+# 5. 05-cost-monitoring.ps1
+# 6. 06-rollback-procedures.ps1
+# 7. 07-cleanup-infrastructure.ps1
+# =============================================================================
 
 param(
     [Parameter(Mandatory=$false)]
@@ -12,8 +24,8 @@ param(
     [switch]$SkipConfirmation = $false
 )
 
-Write-Host "🚀 Production Deployment for Terraform Atlantis Workshop" -ForegroundColor Green
-Write-Host "=======================================================" -ForegroundColor Gray
+Write-Host "🚀 Step 3: Production Deployment for Terraform Atlantis Workshop" -ForegroundColor Green
+Write-Host "===============================================================" -ForegroundColor Gray
 
 # Function to check prerequisites
 function Test-Prerequisites {

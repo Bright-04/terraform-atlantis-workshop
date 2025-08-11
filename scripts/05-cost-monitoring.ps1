@@ -1,9 +1,20 @@
-#!/usr/bin/env pwsh
-# Cost Monitoring Script for AWS Production Environment
+# =============================================================================
+# 05 - AWS Cost Monitoring Script
+# =============================================================================
 # Monitors real AWS infrastructure costs
+# 
+# Workflow Order:
+# 1. 01-validate-environment.ps1
+# 2. 02-setup-github-actions.ps1
+# 3. 03-deploy-infrastructure.ps1
+# 4. 04-health-monitoring.ps1
+# 5. 05-cost-monitoring.ps1 (this script)
+# 6. 06-rollback-procedures.ps1
+# 7. 07-cleanup-infrastructure.ps1
+# =============================================================================
 
-Write-Host "💰 Cost Monitoring - AWS Production Environment" -ForegroundColor Cyan
-Write-Host "===============================================" -ForegroundColor Gray
+Write-Host "💰 Step 5: Cost Monitoring - AWS Production Environment" -ForegroundColor Cyan
+Write-Host "=========================================================" -ForegroundColor Gray
 
 # Function to calculate AWS costs
 function Get-ResourceAWSCost {

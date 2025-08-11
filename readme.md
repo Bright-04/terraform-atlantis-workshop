@@ -184,13 +184,18 @@ terraform-atlantis-workshop/
 3. **Deploy to Production**
 
     ```powershell
-    # Use the production deployment script
-    .\deploy-production.ps1
+    # Run the complete workshop workflow
+    .\scripts\00-complete-workflow.ps1
+
+    # Or run individual steps
+    .\scripts\01-validate-environment.ps1
+    .\scripts\02-setup-github-actions.ps1
+    .\scripts\03-deploy-infrastructure.ps1
     ```
 
 4. **Verify Production Deployment**
     ```powershell
-    .\monitoring\health-check-aws.ps1
+    .\scripts\04-health-monitoring.ps1
     ```
 
 ### Atlantis GitOps Workflow
@@ -198,7 +203,7 @@ terraform-atlantis-workshop/
 1. **Configure GitHub Integration**
 
     ```powershell
-    .\setup-github-integration.ps1
+    .\scripts\02-setup-github-actions.ps1
     ```
 
 2. **Start Atlantis (Manual Setup)**

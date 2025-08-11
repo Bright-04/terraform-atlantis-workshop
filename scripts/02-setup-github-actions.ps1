@@ -1,7 +1,19 @@
-# GitHub Actions Setup Script for Terraform Atlantis Workshop
-# This script helps you configure GitHub Actions for Terraform deployment
+# =============================================================================
+# 02 - GitHub Actions Setup Script
+# =============================================================================
+# This script configures GitHub Actions for Terraform deployment
+# 
+# Workflow Order:
+# 1. 01-validate-environment.ps1
+# 2. 02-setup-github-actions.ps1 (this script)
+# 3. 03-deploy-infrastructure.ps1
+# 4. 04-health-monitoring.ps1
+# 5. 05-cost-monitoring.ps1
+# 6. 06-rollback-procedures.ps1
+# 7. 07-cleanup-infrastructure.ps1
+# =============================================================================
 
-Write-Host "🚀 Setting up GitHub Actions for Terraform Deployment" -ForegroundColor Green
+Write-Host "🚀 Step 2: Setting up GitHub Actions for Terraform Deployment" -ForegroundColor Green
 Write-Host "=====================================================" -ForegroundColor Green
 
 # Check if .env file exists
@@ -184,4 +196,5 @@ Write-Host "✅ Policy validation enforced" -ForegroundColor Green
 Write-Host "✅ Complete audit trail in GitHub" -ForegroundColor Green
 
 Write-Host "`n✅ GitHub Actions Setup Complete!" -ForegroundColor Green
+Write-Host "`n📋 Next Step: Run 03-deploy-infrastructure.ps1" -ForegroundColor Cyan
 Write-Host "🔄 Run the test scenario above to validate your implementation." -ForegroundColor Cyan
