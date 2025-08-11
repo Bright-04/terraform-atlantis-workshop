@@ -7,7 +7,7 @@ variable "region" {
 variable "environment" {
   description = "Environment name"
   type        = string
-  default     = "workshop"
+  default     = "production"
 }
 
 variable "project_name" {
@@ -53,3 +53,4 @@ variable "s3_bucket_suffix" {
 }
 # Testing GitHub Actions - 08/11/2025 23:23:42
 # Testing enhanced technical comments - changed instance_type from t3.micro to t3.small
+# Testing enhanced technical comments - changed environment from workshop to production
