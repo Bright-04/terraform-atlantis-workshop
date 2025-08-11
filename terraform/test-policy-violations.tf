@@ -18,20 +18,13 @@ resource "aws_instance" "test_violation" {
 
 # Compliant: Following naming convention
 resource "aws_s3_bucket" "test_violation" {
-  bucket = "terraform-atlantis-workshop-test-violation-${random_string.bucket_suffix.result}" # Fixed: Added random suffix for uniqueness
+  bucket = "terraform-atlantis-workshop-test-violation-${random_string.bucket_suffix.result}" # Fixed: Using existing random string resource
 
   tags = {
     Environment = "test"
     Project     = "terraform-atlantis-workshop"
     CostCenter  = "workshop-training"
   }
-}
-
-# Random string for bucket name uniqueness
-resource "random_string" "bucket_suffix" {
-  length  = 8
-  special = false
-  upper   = false
 }
 
 # S3 Bucket encryption for test bucket
