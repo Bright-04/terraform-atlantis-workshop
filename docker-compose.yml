@@ -1,0 +1,49 @@
+version: "3.8"
+
+services:
+    atlantis:
+        image: runatlantis/atlantis:latest
+        container_name: atlantis
+        ports:
+            - "4141:4141"
+        environment:
+            - ATLANTIS_GH_TOKEN=${ATLANTIS_GH_TOKEN}
+            - ATLANTIS_GH_WEBHOOK_SECRET=${ATLANTIS_GH_WEBHOOK_SECRET}
+            - ATLANTIS_REPO_ALLOWLIST=${ATLANTIS_REPO_ALLOWLIST}
+            - ATLANTIS_GH_USER=${ATLANTIS_GH_USER}
+            - ATLANTIS_GH_HOSTNAME=github.com
+            - ATLANTIS_ATLANTIS_URL=${ATLANTIS_ATLANTIS_URL}
+            - ATLANTIS_LOG_LEVEL=info
+            - ATLANTIS_DEFAULT_TF_VERSION=v1.6.0
+            - ATLANTIS_ENABLE_POLICY_CHECKS=true
+            - ATLANTIS_ENABLE_DIFF_MARKDOWN_FORMAT=true
+            - ATLANTIS_DISABLE_APPLY_ALL=true
+            - ATLANTIS_REQUIRE_APPROVAL=true
+            - ATLANTIS_REQUIRE_MERGEABLE=true
+            - ATLANTIS_DATA_DIR=/atlantis
+            - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+            - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+            - AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION}
+        volumes:
+            - ./:/workspace
+            - ./atlantis:/atlantis
+        restart: unless-stopped
+        healthcheck:
+            test: ["CMD", "curl", "-f", "http://localhost:4141/health"]
+            interval: 30s
+            timeout: 10s
+            retries: 3
+            start_period: 40s
+
+    # Optional: ngrok for webhook tunneling (if needed)
+    ngrok:
+        image: ngrok/ngrok:latest
+        container_name: ngrok
+        ports:
+            - "4040:4040"
+        command: http atlantis:4141
+        depends_on:
+            - atlantis
+        profiles:
+            - tunnel
+        restart: unless-stopped
