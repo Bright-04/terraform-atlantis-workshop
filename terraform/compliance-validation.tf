@@ -4,18 +4,18 @@
 locals {
   # Compliance rules
   allowed_instance_types = ["t3.micro", "t3.small", "t3.medium"]
-  required_tags = ["Environment", "Project", "CostCenter"]
-  recommended_tags = ["Backup"]
-  
+  required_tags          = ["Environment", "Project", "CostCenter"]
+  recommended_tags       = ["Backup"]
+
   # Get all EC2 instances for validation
   ec2_instances = {
-    web = aws_instance.web
+    web         = aws_instance.web
     policy_test = aws_instance.policy_test
   }
-  
+
   # Get all S3 buckets for validation
   s3_buckets = {
-    workshop = aws_s3_bucket.workshop
+    workshop       = aws_s3_bucket.workshop
     encrypted_test = aws_s3_bucket.encrypted_test
   }
 }
@@ -45,7 +45,7 @@ resource "null_resource" "required_tags_validation" {
   lifecycle {
     precondition {
       condition = alltrue([
-        for k, v in local.ec2_instances : 
+        for k, v in local.ec2_instances :
         can(v.tags.Environment) && can(v.tags.Project) && can(v.tags.CostCenter)
       ])
       error_message = "❌ VIOLATION: EC2 instances missing required tags (Environment, Project, CostCenter). Add proper tags to all instances."
@@ -73,12 +73,12 @@ resource "null_resource" "s3_naming_validation" {
 output "compliance_validation_status" {
   description = "Compliance validation status"
   value = {
-    total_instances = length(local.ec2_instances)
-    total_buckets = length(local.s3_buckets)
+    total_instances        = length(local.ec2_instances)
+    total_buckets          = length(local.s3_buckets)
     allowed_instance_types = local.allowed_instance_types
-    required_tags = local.required_tags
-    recommended_tags = local.recommended_tags
-    message = "Compliance validation framework active"
+    required_tags          = local.required_tags
+    recommended_tags       = local.recommended_tags
+    message                = "Compliance validation framework active"
   }
 }
 
@@ -88,11 +88,11 @@ output "compliance_rules" {
   value = {
     cost_control = {
       allowed_instance_types = local.allowed_instance_types
-      required_tags = local.required_tags
+      required_tags          = local.required_tags
     }
     security = {
       s3_naming_convention = "terraform-atlantis-workshop-*"
-      encryption_required = true
+      encryption_required  = true
     }
     operational = {
       recommended_tags = local.recommended_tags

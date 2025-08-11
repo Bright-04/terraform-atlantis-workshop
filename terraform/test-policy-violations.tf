@@ -3,10 +3,10 @@
 
 # Compliant: Using approved instance type
 resource "aws_instance" "test_violation" {
-  ami                    = data.aws_ami.amazon_linux.id  # Fixed: Use data source for valid AMI
-  instance_type          = "m5.large"  # VIOLATION: Expensive instance type
-  subnet_id              = aws_subnet.public.id  # Fixed: Added subnet assignment
-  vpc_security_group_ids = [aws_security_group.test_violation.id]  # Fixed: Added security group
+  ami                    = data.aws_ami.amazon_linux.id           # Fixed: Use data source for valid AMI
+  instance_type          = "m5.large"                             # VIOLATION: Expensive instance type
+  subnet_id              = aws_subnet.public.id                   # Fixed: Added subnet assignment
+  vpc_security_group_ids = [aws_security_group.test_violation.id] # Fixed: Added security group
 
   tags = {
     Name        = "test-violation-instance"
@@ -18,7 +18,7 @@ resource "aws_instance" "test_violation" {
 
 # Compliant: Following naming convention
 resource "aws_s3_bucket" "test_violation" {
-  bucket = "terraform-atlantis-workshop-test-violation"  # Fixed: Changed to follow naming convention
+  bucket = "terraform-atlantis-workshop-test-violation" # Fixed: Changed to follow naming convention
 
   tags = {
     Environment = "test"
@@ -60,7 +60,7 @@ resource "aws_s3_bucket_versioning" "test_violation" {
 resource "aws_security_group" "test_violation" {
   name_prefix = "test-violation-sg"
   description = "Security group with policy violations"
-  vpc_id      = aws_vpc.main.id  # Fixed: Added missing VPC reference
+  vpc_id      = aws_vpc.main.id # Fixed: Added missing VPC reference
 
   ingress {
     from_port   = 22
@@ -79,18 +79,18 @@ resource "aws_security_group" "test_violation" {
   tags = {
     Environment = "test"
     Project     = "terraform-atlantis-workshop"
-    CostCenter  = "workshop-training"  # Fixed: Added missing CostCenter tag
+    CostCenter  = "workshop-training" # Fixed: Added missing CostCenter tag
   }
 }
 
 # Compliant: All required tags present
 resource "aws_ebs_volume" "test_violation" {
-  availability_zone = "ap-southeast-1a"  # Fixed: Changed to match configured region
+  availability_zone = "ap-southeast-1a" # Fixed: Changed to match configured region
   size              = 20
 
   tags = {
     Environment = "test"
     Project     = "terraform-atlantis-workshop"
-    CostCenter  = "workshop-training"  # Fixed: Added missing CostCenter tag
+    CostCenter  = "workshop-training" # Fixed: Added missing CostCenter tag
   }
 }
