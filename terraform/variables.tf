@@ -7,7 +7,7 @@ variable "region" {
 variable "environment" {
   description = "Environment name"
   type        = string
-  default     = "workshop"
+  default     = "production"
 }
 
 variable "project_name" {
@@ -37,7 +37,7 @@ variable "private_subnet_cidr" {
 variable "instance_type" {
   description = "EC2 instance type"
   type        = string
-  default     = "t3.micro"
+  default     = "t3.small"
 }
 
 variable "key_pair_name" {
@@ -51,3 +51,6 @@ variable "s3_bucket_suffix" {
   type        = string
   default     = "workshop-bucket"
 }
+# Testing GitHub Actions - 08/11/2025 23:23:42
+# Testing enhanced technical comments - changed instance_type from t3.micro to t3.small
+# Testing enhanced technical comments - changed environment from workshop to production

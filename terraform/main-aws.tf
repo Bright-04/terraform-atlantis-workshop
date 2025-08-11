@@ -167,14 +167,15 @@ resource "aws_instance" "web" {
   )
 
   tags = {
-    Name        = "${var.project_name}-web-server"
-    Environment = var.environment
-    Project     = var.project_name
-    Owner       = "workshop-participant"
-    TestTag     = "aws-production-deployment"
-    Timestamp   = formatdate("YYYY-MM-DD-hhmm", timestamp())
-    CostCenter  = "production"
-    Backup      = "daily"
+    Name         = "${var.project_name}-web-server"
+    Environment  = var.environment
+    Project      = var.project_name
+    Owner        = "workshop-participant"
+    TestTag      = "aws-production-deployment"
+    Timestamp    = formatdate("YYYY-MM-DD-hhmm", timestamp())
+    CostCenter   = "production"
+    Backup       = "daily"
+    InstanceType = var.instance_type
   }
 }
 

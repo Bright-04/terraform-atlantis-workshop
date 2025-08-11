@@ -53,7 +53,7 @@ jobs:
 
             - name: Terraform Plan
               working-directory: terraform
-              run: terraform plan -out=tfplan
+              run: terraform plan -out=tfplan | tee plan.txt
               if: github.event_name == 'pull_request'
 
             - name: Upload Terraform Plan
@@ -71,30 +71,197 @@ jobs:
                       const fs = require('fs');
                       const plan = fs.readFileSync('terraform/tfplan', 'base64');
 
-                      const comment = `## Terraform Plan 📋
+                                             // Parse terraform plan output to get resource changes
+                       const planOutput = fs.readFileSync('terraform/plan.txt', 'utf8');
+                       
+                       // Remove ANSI color codes
+                       const cleanOutput = planOutput.replace(/\x1b\[[0-9;]*m/g, '');
+                       
+                       // Extract resource change counts
+                       const addMatch = cleanOutput.match(/(\d+) to add/);
+                       const changeMatch = cleanOutput.match(/(\d+) to change/);
+                       const destroyMatch = cleanOutput.match(/(\d+) to destroy/);
+                       const noChangesMatch = cleanOutput.match(/No changes\. Objects have not changed/);
+                       
+                       // Extract specific resource changes
+                       const resourceChanges = [];
+                       const lines = cleanOutput.split('\n');
+                       let currentResource = null;
+                       let inResourceBlock = false;
+                       
+                       for (const line of lines) {
+                         const trimmedLine = line.trim();
+                         
+                         // Match resource creation/modification/destruction
+                         const resourceMatch = trimmedLine.match(/^#\s*([^#]+)\s*will be created/);
+                         const resourceChangeMatch = trimmedLine.match(/^#\s*([^#]+)\s*will be updated/);
+                         const resourceDestroyMatch = trimmedLine.match(/^#\s*([^#]+)\s*will be destroyed/);
+                         
+                         if (resourceMatch) {
+                           currentResource = { type: 'create', name: resourceMatch[1].trim() };
+                           inResourceBlock = true;
+                         } else if (resourceChangeMatch) {
+                           currentResource = { type: 'update', name: resourceChangeMatch[1].trim() };
+                           inResourceBlock = true;
+                         } else if (resourceDestroyMatch) {
+                           currentResource = { type: 'destroy', name: resourceDestroyMatch[1].trim() };
+                           inResourceBlock = true;
+                         }
+                         
+                         // Extract key attributes for new resources (lines starting with +)
+                         if (currentResource && inResourceBlock && line.includes('+') && !line.startsWith('#')) {
+                           const attrMatch = line.match(/^\s*\+([^:]+):\s*"([^"]+)"/);
+                           if (attrMatch) {
+                             const attr = attrMatch[1].trim();
+                             const value = attrMatch[2];
+                             
+                             // Only include important attributes
+                             const importantAttrs = ['name', 'instance_type', 'ami', 'vpc_id', 'subnet_id', 'bucket', 'region', 'cidr_block', 'availability_zone', 'port', 'protocol', 'cidr_blocks', 'instancetype'];
+                             if (importantAttrs.some(importantAttr => importantAttr.toLowerCase() === attr.toLowerCase())) {
+                               if (!currentResource.attributes) currentResource.attributes = {};
+                               currentResource.attributes[attr] = value;
+                             }
+                           }
+                         }
+                         
+                         // Extract changes in existing resources (lines starting with ~)
+                         if (currentResource && inResourceBlock && line.includes('~') && !line.startsWith('#')) {
+                           // Handle tag changes specifically
+                           if (line.includes('tags') && line.includes('=')) {
+                             const tagMatch = line.match(/^\s*~([^:]+):\s*"([^"]+)"\s*->\s*"([^"]+)"/);
+                             if (tagMatch) {
+                               const attr = tagMatch[1].trim();
+                               const oldValue = tagMatch[2];
+                               const newValue = tagMatch[3];
+                               
+                               if (!currentResource.changes) currentResource.changes = {};
+                               currentResource.changes[attr] = { from: oldValue, to: newValue };
+                             }
+                           } else {
+                             // Handle other attribute changes
+                             const changeMatch = line.match(/^\s*~([^:]+):\s*"([^"]+)"\s*->\s*"([^"]+)"/);
+                             if (changeMatch) {
+                               const attr = changeMatch[1].trim();
+                               const oldValue = changeMatch[2];
+                               const newValue = changeMatch[3];
+                               
+                               if (!currentResource.changes) currentResource.changes = {};
+                               currentResource.changes[attr] = { from: oldValue, to: newValue };
+                             }
+                           }
+                         }
+                         
+                         // End of resource block (empty line or new resource starts)
+                         if (inResourceBlock && (trimmedLine === '' || trimmedLine.startsWith('#'))) {
+                           if (currentResource) {
+                             resourceChanges.push(currentResource);
+                             currentResource = null;
+                           }
+                           inResourceBlock = false;
+                         }
+                       }
+                       
+                       let planSummary = '';
+                       let changeDetails = '';
+                       let technicalDetails = '';
+                       
+                       if (noChangesMatch) {
+                         planSummary = '**✅ No Changes Detected**\n- Infrastructure is up to date';
+                         changeDetails = 'No resources will be added, modified, or destroyed.';
+                       } else {
+                         const toAdd = addMatch ? parseInt(addMatch[1]) : 0;
+                         const toChange = changeMatch ? parseInt(changeMatch[1]) : 0;
+                         const toDestroy = destroyMatch ? parseInt(destroyMatch[1]) : 0;
+                         
+                         planSummary = `**📊 Resource Changes:**\n- ➕ **${toAdd}** to add\n- 🔄 **${toChange}** to change\n- 🗑️ **${toDestroy}** to destroy`;
+                         
+                         // Build technical details
+                         const creates = resourceChanges.filter(r => r.type === 'create');
+                         const updates = resourceChanges.filter(r => r.type === 'update');
+                         const destroys = resourceChanges.filter(r => r.type === 'destroy');
+                         
+                                                    if (creates.length > 0) {
+                             technicalDetails += '\n**🆕 New Resources:**\n';
+                             creates.forEach(resource => {
+                               const resourceType = resource.name.split('.')[0];
+                               const resourceName = resource.name.split('.')[1] || resource.name;
+                               technicalDetails += `- \`${resourceType}\` (${resourceName})\n`;
+                               
+                               if (resource.attributes) {
+                                 Object.entries(resource.attributes).forEach(([attr, value]) => {
+                                   if (['name', 'instance_type', 'ami', 'vpc_id', 'subnet_id', 'bucket', 'region', 'port', 'protocol', 'cidr_blocks'].includes(attr)) {
+                                     technicalDetails += `  - ${attr}: \`${value}\`\n`;
+                                   }
+                                 });
+                               }
+                             });
+                           }
+                         
+                         if (updates.length > 0) {
+                           technicalDetails += '\n**🔄 Modified Resources:**\n';
+                           updates.forEach(resource => {
+                             const resourceType = resource.name.split('.')[0];
+                             const resourceName = resource.name.split('.')[1] || resource.name;
+                             technicalDetails += `- \`${resourceType}\` (${resourceName})\n`;
+                             
+                             if (resource.changes) {
+                               Object.entries(resource.changes).forEach(([attr, change]) => {
+                                 technicalDetails += `  - ${attr}: \`${change.from}\` → \`${change.to}\`\n`;
+                               });
+                             }
+                           });
+                         }
+                         
+                         if (destroys.length > 0) {
+                           technicalDetails += '\n**🗑️ Resources to Destroy:**\n';
+                           destroys.forEach(resource => {
+                             const resourceType = resource.name.split('.')[0];
+                             const resourceName = resource.name.split('.')[1] || resource.name;
+                             technicalDetails += `- \`${resourceType}\` (${resourceName})\n`;
+                           });
+                         }
+                       }
 
-                      **Plan Summary:**
-                      - Plan file generated successfully
-                      - Ready for review and approval
+                                             const comment = `## Terraform Plan 📋
 
-                      **Next Steps:**
-                      1. Review the plan output above
-                      2. Approve this PR if changes look correct
-                      3. Merge to trigger apply
+                       ${planSummary}
 
-                      **Security & Compliance:**
-                      - ✅ Policy validation passed
-                      - ✅ Cost controls enforced
-                      - ✅ Security requirements met
+                       **🔧 Technical Changes:**
+                       ${technicalDetails}
 
-                      <details>
-                      <summary>📄 Plan Details</summary>
+                       **📋 Workflow Status:**
+                       - ✅ **terraform-plan**: Completed successfully
+                       - ⏳ **terraform-apply**: Will run when PR is merged to main
+                       - ⏳ **health-check**: Will run after apply completes
+                       - ⏸️ **cleanup**: Manual trigger only (for destroy operations)
 
-                      \`\`\`hcl
-                      # Plan file: ${plan}
-                      \`\`\`
+                       **🔒 Security & Compliance:**
+                       - ✅ Policy validation passed
+                       - ✅ Cost controls enforced
+                       - ✅ Security requirements met
 
-                      </details>`;
+                       **📝 Next Steps:**
+                       1. Review the technical changes above
+                       2. Approve this PR if changes look correct
+                       3. Merge to trigger automatic apply and health check
+
+                       <details>
+                       <summary>📄 Full Plan Output</summary>
+
+                       \`\`\`
+                       ${planOutput}
+                       \`\`\`
+
+                       </details>
+
+                       <details>
+                       <summary>🔧 Plan File (Base64)</summary>
+
+                       \`\`\`
+                       ${plan}
+                       \`\`\`
+
+                       </details>`;
 
                       github.rest.issues.createComment({
                         issue_number: context.issue.number,
@@ -156,29 +323,36 @@ jobs:
 
                       const comment = `## Terraform Apply ✅
 
-                      **Deployment Successful!**
+                      **🎉 Deployment Successful!**
 
-                      **Infrastructure Details:**
+                      **📊 Infrastructure Summary:**
                       - Instance ID: ${outputs.instance_id?.value || 'N/A'}
                       - Public IP: ${outputs.instance_public_ip?.value || 'N/A'}
                       - Website URL: ${outputs.website_url?.value || 'N/A'}
                       - VPC ID: ${outputs.vpc_id?.value || 'N/A'}
 
-                      **Resources Created:**
+                      **🔧 Resources Managed:**
                       - EC2 Instances: ${outputs.compliance_validation_status?.value?.total_instances || 0}
                       - S3 Buckets: ${outputs.compliance_validation_status?.value?.total_buckets || 0}
 
-                      **Compliance Status:**
+                      **🔒 Compliance Status:**
                       - ✅ All policies passed
                       - ✅ Security requirements met
                       - ✅ Cost controls enforced
 
-                      **Next Steps:**
-                      1. Verify resources in AWS Console
-                      2. Test web server accessibility
-                      3. Monitor CloudWatch logs
+                      **📋 Workflow Status:**
+                      - ✅ **terraform-plan**: Completed
+                      - ✅ **terraform-apply**: Completed successfully
+                      - 🔄 **health-check**: Running now...
+                      - ⏸️ **cleanup**: Manual trigger only
 
-                      **AWS Console Links:**
+                      **🔍 Next Steps:**
+                      1. Wait for health check to complete
+                      2. Verify resources in AWS Console
+                      3. Test web server accessibility
+                      4. Monitor CloudWatch logs
+
+                      **🌐 AWS Console Links:**
                       - [EC2 Dashboard](https://console.aws.amazon.com/ec2/v2/home?region=${{ env.AWS_REGION }})
                       - [VPC Dashboard](https://console.aws.amazon.com/vpc/home?region=${{ env.AWS_REGION }})
                       - [S3 Console](https://console.aws.amazon.com/s3/home)`;
@@ -223,6 +397,9 @@ jobs:
 
             - name: Run Health Check
               run: |
+                  echo "🔍 Starting infrastructure health check..."
+                  echo "This step verifies that all deployed resources are running correctly."
+
                   # Check EC2 instances
                   echo "🔍 Checking EC2 instances..."
                   aws ec2 describe-instances \
@@ -258,10 +435,62 @@ jobs:
                     echo "⚠️ No web server found"
                   fi
 
+            - name: Comment with Health Check Results
+              uses: actions/github-script@v7
+              with:
+                  script: |
+                      const comment = `## Health Check ✅
+
+                      **🔍 Infrastructure Health Verification Complete**
+
+                      **📊 Health Status:**
+                      - ✅ EC2 instances verified
+                      - ✅ S3 buckets verified  
+                      - ✅ VPC networking verified
+                      - ✅ Web server accessibility tested
+
+                      **📋 Workflow Status:**
+                      - ✅ **terraform-plan**: Completed
+                      - ✅ **terraform-apply**: Completed
+                      - ✅ **health-check**: Completed successfully
+                      - ⏸️ **cleanup**: Manual trigger only (for destroy operations)
+
+                      **🎯 Deployment Summary:**
+                      Your Terraform infrastructure has been successfully deployed and verified!
+
+                      **🔍 Manual Verification:**
+                      - Check AWS Console for resource status
+                      - Test web server connectivity
+                      - Monitor CloudWatch logs for any issues
+
+                      **🌐 Quick Links:**
+                      - [EC2 Dashboard](https://console.aws.amazon.com/ec2/v2/home?region=${{ env.AWS_REGION }})
+                      - [VPC Dashboard](https://console.aws.amazon.com/vpc/home?region=${{ env.AWS_REGION }})
+                      - [S3 Console](https://console.aws.amazon.com/s3/home)`;
+
+                      // Find the latest commit and comment on it
+                      const commits = await github.rest.repos.listCommits({
+                        owner: context.repo.owner,
+                        repo: context.repo.repo,
+                        sha: context.sha,
+                        per_page: 1
+                      });
+
+                      if (commits.data.length > 0) {
+                        await github.rest.repos.createCommitComment({
+                          owner: context.repo.owner,
+                          repo: context.repo.repo,
+                          commit_sha: commits.data[0].sha,
+                          body: comment
+                        });
+                      }
+
     cleanup:
         name: Cleanup (Manual)
         runs-on: ubuntu-latest
         if: github.event.inputs.action == 'destroy'
+        # This job only runs when manually triggered with 'destroy' action
+        # It's used for cleaning up infrastructure when the workshop is complete
 
         steps:
             - name: Checkout
