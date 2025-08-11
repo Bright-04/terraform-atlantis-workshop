@@ -29,7 +29,7 @@ services:
             - ./terraform:/workspace/terraform
             - ./atlantis.yaml:/workspace/atlantis.yaml
             - atlantis-data:/atlantis
-        command: server --atlantis-url=http://localhost:4141
+        command: server --atlantis-url=https://your-domain:4141
         restart: unless-stopped
         networks:
             - atlantis-network

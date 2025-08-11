@@ -103,7 +103,7 @@ Write-Host "     * AWS_ACCESS_KEY_ID" -ForegroundColor Gray
 Write-Host "     * AWS_SECRET_ACCESS_KEY" -ForegroundColor Gray
 Write-Host "     * AWS_DEFAULT_REGION" -ForegroundColor Gray
 
-Write-Host "`n3. For local development, use environment variables:" -ForegroundColor White
+Write-Host "`n3. For production deployment, use environment variables:" -ForegroundColor White
 Write-Host "   `$env:AWS_ACCESS_KEY_ID = 'your-key'" -ForegroundColor Gray
 Write-Host "   `$env:AWS_SECRET_ACCESS_KEY = 'your-secret'" -ForegroundColor Gray
 Write-Host "   `$env:AWS_DEFAULT_REGION = 'ap-southeast-1'" -ForegroundColor Gray

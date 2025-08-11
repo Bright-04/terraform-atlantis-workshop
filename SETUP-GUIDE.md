@@ -97,9 +97,9 @@ The project is configured to use GitHub Actions for automated deployment:
     - Validate compliance
     - Apply changes (after approval)
 
-### **Option 2: Local Atlantis Setup**
+### **Option 2: Production Atlantis Setup**
 
-For local development with Atlantis:
+For production deployment with Atlantis:
 
 1. **Start Atlantis:**
 
@@ -110,7 +110,7 @@ For local development with Atlantis:
 2. **Access Atlantis UI:**
 
     ```
-    http://localhost:4141
+    https://your-domain:4141
     ```
 
 3. **Configure GitHub webhook:**
@@ -252,7 +252,7 @@ projects:
 
 ### **Always Do This:**
 
--   ✅ Use environment variables for local development
+-   ✅ Use environment variables for production deployment
 -   ✅ Use GitHub secrets for CI/CD
 -   ✅ Rotate credentials regularly
 -   ✅ Use IAM roles when possible
@@ -354,7 +354,7 @@ You've successfully set up the workshop when:
 -   ✅ Infrastructure deploys successfully
 -   ✅ Compliance validation works
 -   ✅ Health checks pass
--   ✅ Atlantis is accessible (if using local setup)
+-   ✅ Atlantis is accessible (if using production setup)
 
 ---
 
