@@ -175,6 +175,7 @@ resource "aws_instance" "web" {
     Timestamp   = formatdate("YYYY-MM-DD-hhmm", timestamp())
     CostCenter  = "production"
     Backup      = "daily"
+    InstanceType = var.instance_type
   }
 }
 

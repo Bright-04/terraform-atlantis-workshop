@@ -74,40 +74,49 @@ jobs:
                                              // Parse terraform plan output to get resource changes
                        const planOutput = fs.readFileSync('terraform/plan.txt', 'utf8');
                        
+                       // Remove ANSI color codes
+                       const cleanOutput = planOutput.replace(/\x1b\[[0-9;]*m/g, '');
+                       
                        // Extract resource change counts
-                       const addMatch = planOutput.match(/(\d+) to add/);
-                       const changeMatch = planOutput.match(/(\d+) to change/);
-                       const destroyMatch = planOutput.match(/(\d+) to destroy/);
-                       const noChangesMatch = planOutput.match(/No changes\. Objects have not changed/);
+                       const addMatch = cleanOutput.match(/(\d+) to add/);
+                       const changeMatch = cleanOutput.match(/(\d+) to change/);
+                       const destroyMatch = cleanOutput.match(/(\d+) to destroy/);
+                       const noChangesMatch = cleanOutput.match(/No changes\. Objects have not changed/);
                        
                        // Extract specific resource changes
                        const resourceChanges = [];
-                       const lines = planOutput.split('\n');
+                       const lines = cleanOutput.split('\n');
                        let currentResource = null;
+                       let inResourceBlock = false;
                        
                        for (const line of lines) {
-                         // Match resource creation/modification
-                         const resourceMatch = line.match(/^(\s*)#\s*([^#]+)\s*will be created/);
-                         const resourceChangeMatch = line.match(/^(\s*)#\s*([^#]+)\s*will be updated/);
-                         const resourceDestroyMatch = line.match(/^(\s*)#\s*([^#]+)\s*will be destroyed/);
+                         const trimmedLine = line.trim();
+                         
+                         // Match resource creation/modification/destruction
+                         const resourceMatch = trimmedLine.match(/^#\s*([^#]+)\s*will be created/);
+                         const resourceChangeMatch = trimmedLine.match(/^#\s*([^#]+)\s*will be updated/);
+                         const resourceDestroyMatch = trimmedLine.match(/^#\s*([^#]+)\s*will be destroyed/);
                          
                          if (resourceMatch) {
-                           currentResource = { type: 'create', name: resourceMatch[2].trim() };
+                           currentResource = { type: 'create', name: resourceMatch[1].trim() };
+                           inResourceBlock = true;
                          } else if (resourceChangeMatch) {
-                           currentResource = { type: 'update', name: resourceChangeMatch[2].trim() };
+                           currentResource = { type: 'update', name: resourceChangeMatch[1].trim() };
+                           inResourceBlock = true;
                          } else if (resourceDestroyMatch) {
-                           currentResource = { type: 'destroy', name: resourceDestroyMatch[2].trim() };
+                           currentResource = { type: 'destroy', name: resourceDestroyMatch[1].trim() };
+                           inResourceBlock = true;
                          }
                          
-                         // Extract key attributes for new resources
-                         if (currentResource && line.includes('+') && !line.startsWith('#')) {
+                         // Extract key attributes for new resources (lines starting with +)
+                         if (currentResource && inResourceBlock && line.includes('+') && !line.startsWith('#')) {
                            const attrMatch = line.match(/^\s*\+([^:]+):\s*"([^"]+)"/);
                            if (attrMatch) {
                              const attr = attrMatch[1].trim();
                              const value = attrMatch[2];
                              
                              // Only include important attributes
-                             const importantAttrs = ['name', 'instance_type', 'ami', 'vpc_id', 'subnet_id', 'bucket', 'region', 'cidr_block', 'availability_zone', 'port', 'protocol', 'cidr_blocks'];
+                             const importantAttrs = ['name', 'instance_type', 'ami', 'vpc_id', 'subnet_id', 'bucket', 'region', 'cidr_block', 'availability_zone', 'port', 'protocol', 'cidr_blocks', 'instancetype'];
                              if (importantAttrs.some(importantAttr => importantAttr.toLowerCase() === attr.toLowerCase())) {
                                if (!currentResource.attributes) currentResource.attributes = {};
                                currentResource.attributes[attr] = value;
@@ -115,23 +124,40 @@ jobs:
                            }
                          }
                          
-                         // Extract changes in existing resources
-                         if (currentResource && line.includes('~') && !line.startsWith('#')) {
-                           const changeMatch = line.match(/^\s*~([^:]+):\s*"([^"]+)"\s*->\s*"([^"]+)"/);
-                           if (changeMatch) {
-                             const attr = changeMatch[1].trim();
-                             const oldValue = changeMatch[2];
-                             const newValue = changeMatch[3];
-                             
-                             if (!currentResource.changes) currentResource.changes = {};
-                             currentResource.changes[attr] = { from: oldValue, to: newValue };
+                         // Extract changes in existing resources (lines starting with ~)
+                         if (currentResource && inResourceBlock && line.includes('~') && !line.startsWith('#')) {
+                           // Handle tag changes specifically
+                           if (line.includes('tags') && line.includes('=')) {
+                             const tagMatch = line.match(/^\s*~([^:]+):\s*"([^"]+)"\s*->\s*"([^"]+)"/);
+                             if (tagMatch) {
+                               const attr = tagMatch[1].trim();
+                               const oldValue = tagMatch[2];
+                               const newValue = tagMatch[3];
+                               
+                               if (!currentResource.changes) currentResource.changes = {};
+                               currentResource.changes[attr] = { from: oldValue, to: newValue };
+                             }
+                           } else {
+                             // Handle other attribute changes
+                             const changeMatch = line.match(/^\s*~([^:]+):\s*"([^"]+)"\s*->\s*"([^"]+)"/);
+                             if (changeMatch) {
+                               const attr = changeMatch[1].trim();
+                               const oldValue = changeMatch[2];
+                               const newValue = changeMatch[3];
+                               
+                               if (!currentResource.changes) currentResource.changes = {};
+                               currentResource.changes[attr] = { from: oldValue, to: newValue };
+                             }
                            }
                          }
                          
-                         // End of resource block
-                         if (currentResource && line.trim() === '') {
-                           resourceChanges.push(currentResource);
-                           currentResource = null;
+                         // End of resource block (empty line or new resource starts)
+                         if (inResourceBlock && (trimmedLine === '' || trimmedLine.startsWith('#'))) {
+                           if (currentResource) {
+                             resourceChanges.push(currentResource);
+                             currentResource = null;
+                           }
+                           inResourceBlock = false;
                          }
                        }
                        
