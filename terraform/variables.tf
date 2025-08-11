@@ -19,19 +19,19 @@ variable "project_name" {
 variable "vpc_cidr" {
   description = "CIDR block for VPC"
   type        = string
-  default     = "10.0.0.0/16"
+  default     = "172.16.0.0/16"
 }
 
 variable "public_subnet_cidr" {
   description = "CIDR block for public subnet"
   type        = string
-  default     = "10.0.1.0/24"
+  default     = "172.16.1.0/24"
 }
 
 variable "private_subnet_cidr" {
   description = "CIDR block for private subnet"
   type        = string
-  default     = "10.0.2.0/24"
+  default     = "172.16.2.0/24"
 }
 
 variable "instance_type" {
@@ -55,3 +55,4 @@ variable "s3_bucket_suffix" {
 # Testing enhanced technical comments - changed instance_type from t3.micro to t3.small
 # Testing enhanced technical comments - changed environment from workshop to production
 # Testing enhanced technical comments - changed project_name to v2 for PR testing
+# Testing enhanced technical comments - changed VPC CIDR from 10.0.0.0/16 to 172.16.0.0/16 for workflow testing
