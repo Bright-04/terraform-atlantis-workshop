@@ -1,10 +1,12 @@
-## Workshop_topic:
+# Workshop Information
 
-Environment Provisioning Automation với Terraform và Atlantis
+## Workshop Topic
 
-## Workshop Requirements:
+**Environment Provisioning Automation with Terraform and Atlantis**
 
-Implement automated environment provisioning với Terraform, Atlantis, approval workflows, cost controls, monitoring. Yêu cầu: Provisioning automation, approval workflows, cost controls, monitoring integration, compliance validation, rollback procedures, operational procedures, documentation.
+## Workshop Requirements
+
+Implement automated environment provisioning with Terraform, Atlantis, approval workflows, cost controls, and monitoring. Requirements include: provisioning automation, approval workflows, cost controls, monitoring integration, compliance validation, rollback procedures, operational procedures, and documentation.
 
 ## Implementation Status: ✅ WORKSHOP REQUIREMENTS COMPLETE
 

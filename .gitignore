@@ -8,6 +8,14 @@
 .terraform.lock.hcl
 terraform.tfstate.d/
 
+# Terraform specific files
+terraform/terraform.tfvars
+terraform/terraform.tfstate*
+terraform/$planFile
+terraform/test-plan*
+terraform/plan.json
+terraform/test-plan.json
+
 # Atlantis Data and Cache
 atlantis.log
 atlantis.yaml.bak
@@ -29,6 +37,10 @@ atlantis.db
 
 # AWS Production Data
 aws-production-data/
+
+# Monitoring generated files
+monitoring/cost-report-*.json
+monitoring/.gitkeep
 
 # IDE and Editor Files
 .vscode/
