@@ -49,9 +49,10 @@ variable "key_pair_name" {
 variable "s3_bucket_suffix" {
   description = "Optional suffix for S3 bucket name to ensure uniqueness"
   type        = string
-  default     = "workshop-bucket"
+  default     = "workshop-bucket-v2"
 }
 # Testing GitHub Actions - 08/11/2025 23:23:42
 # Testing enhanced technical comments - changed instance_type from t3.micro to t3.small
 # Testing enhanced technical comments - changed environment from workshop to production
 # Testing enhanced technical comments - reverted project_name to avoid resource conflicts
+# Testing enhanced technical comments - changed s3_bucket_suffix to v2 for workflow testing
