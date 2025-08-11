@@ -9,8 +9,9 @@ locals {
 
   # Get all EC2 instances for validation
   ec2_instances = {
-    web         = aws_instance.web
-    policy_test = aws_instance.policy_test
+    web            = aws_instance.web
+    policy_test    = aws_instance.policy_test
+    test_violation = aws_instance.test_violation
   }
 
   # Get all S3 buckets for validation
