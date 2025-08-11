@@ -70,19 +70,19 @@ jobs:
                   script: |
                       const fs = require('fs');
                       const plan = fs.readFileSync('terraform/tfplan', 'base64');
-                      
+
                       // Parse terraform plan output to get resource changes
                       const planOutput = fs.readFileSync('terraform/plan.txt', 'utf8');
-                      
+
                       // Extract resource change counts
                       const addMatch = planOutput.match(/(\d+) to add/);
                       const changeMatch = planOutput.match(/(\d+) to change/);
                       const destroyMatch = planOutput.match(/(\d+) to destroy/);
                       const noChangesMatch = planOutput.match(/No changes\. Objects have not changed/);
-                      
+
                       let planSummary = '';
                       let changeDetails = '';
-                      
+
                       if (noChangesMatch) {
                         planSummary = '**✅ No Changes Detected**\n- Infrastructure is up to date';
                         changeDetails = 'No resources will be added, modified, or destroyed.';
@@ -275,7 +275,7 @@ jobs:
               run: |
                   echo "🔍 Starting infrastructure health check..."
                   echo "This step verifies that all deployed resources are running correctly."
-                  
+
                   # Check EC2 instances
                   echo "🔍 Checking EC2 instances..."
                   aws ec2 describe-instances \
@@ -333,7 +333,7 @@ jobs:
 
                       **🎯 Deployment Summary:**
                       Your Terraform infrastructure has been successfully deployed and verified!
-                      
+
                       **🔍 Manual Verification:**
                       - Check AWS Console for resource status
                       - Test web server connectivity
