@@ -1,7 +1,7 @@
 # =============================================================================
-# 04 - AWS Production Health Monitoring Script
+# 04 - Health Monitoring Script
 # =============================================================================
-# Monitors real AWS infrastructure health and status
+# This script monitors the health and status of deployed AWS infrastructure
 # 
 # Workflow Order:
 # 1. 01-validate-environment.ps1
@@ -15,28 +15,33 @@
 
 param(
     [Parameter(Mandatory=$false)]
-    [string]$Region = "",
+    [string]$Region = "ap-southeast-1",
     
     [Parameter(Mandatory=$false)]
     [switch]$Detailed = $false
 )
 
-Write-Host "🔍 Step 4: AWS Production Infrastructure - Health Check" -ForegroundColor Cyan
-Write-Host "=======================================================" -ForegroundColor Gray
-
 # Function to check AWS credentials
 function Test-AWSCredentials {
+    Write-Host "Step 4: AWS Health Monitoring" -ForegroundColor Green
+    Write-Host "=============================================" -ForegroundColor Gray
+    
+    Write-Host "Checking AWS credentials..." -ForegroundColor Yellow
+    
     try {
-        $caller = aws sts get-caller-identity 2>$null | ConvertFrom-Json
-        if ($caller) {
-            Write-Host "✅ AWS Credentials Valid" -ForegroundColor Green
-            Write-Host "   Account ID: $($caller.Account)" -ForegroundColor Gray
-            Write-Host "   User ARN: $($caller.Arn)" -ForegroundColor Gray
+        $identity = aws sts get-caller-identity 2>$null | ConvertFrom-Json
+        if ($identity) {
+            Write-Host "   AWS Account: $($identity.Account)" -ForegroundColor Green
+            Write-Host "   User ARN: $($identity.Arn)" -ForegroundColor Green
             return $true
+        }
+        else {
+            Write-Host "   AWS credentials not configured" -ForegroundColor Red
+            return $false
         }
     }
     catch {
-        Write-Host "❌ AWS Credentials Invalid" -ForegroundColor Red
+        Write-Host "   AWS credentials not configured" -ForegroundColor Red
         return $false
     }
 }
@@ -45,17 +50,23 @@ function Test-AWSCredentials {
 function Test-AWSRegion {
     param([string]$Region)
     
-    if ([string]::IsNullOrEmpty($Region)) {
-        $Region = aws configure get region 2>$null
-    }
+    Write-Host "Checking AWS region..." -ForegroundColor Yellow
     
-    if ($Region) {
-        Write-Host "✅ AWS Region: $Region" -ForegroundColor Green
-        return $Region
+    try {
+        $currentRegion = aws configure get region 2>$null
+        if ($currentRegion -eq $Region) {
+            Write-Host "   Region: $Region" -ForegroundColor Green
+            return $Region
+        }
+        else {
+            Write-Host "   Current region: $currentRegion" -ForegroundColor Yellow
+            Write-Host "   Using specified region: $Region" -ForegroundColor Yellow
+            return $Region
+        }
     }
-    else {
-        Write-Host "❌ AWS Region not configured" -ForegroundColor Red
-        return $null
+    catch {
+        Write-Host "   Using default region: $Region" -ForegroundColor Yellow
+        return $Region
     }
 }
 
@@ -63,87 +74,73 @@ function Test-AWSRegion {
 function Test-EC2Instances {
     param([string]$Region)
     
-    Write-Host "`n🖥️ EC2 Instances Status:" -ForegroundColor Yellow
+    Write-Host "EC2 Instances Status:" -ForegroundColor Yellow
     
     try {
-        $instances = aws ec2 describe-instances --region $Region --query 'Reservations[].Instances[].[InstanceId,State.Name,InstanceType,Tags[?Key==`Name`].Value|[0],PublicIpAddress]' --output json 2>$null | ConvertFrom-Json
+        $instances = aws ec2 describe-instances --region $Region --filters "Name=instance-state-name,Values=running" --query 'Reservations[*].Instances[*].[InstanceId,InstanceType,State.Name,PublicIpAddress,Tags[?Key==`Name`].Value|[0]]' --output json 2>$null | ConvertFrom-Json
         
         if ($instances -and $instances.Count -gt 0) {
-            Write-Host "   Found $($instances.Count) instances:" -ForegroundColor Gray
+            Write-Host "   Found $($instances.Count) running instances:" -ForegroundColor Gray
             
             foreach ($instance in $instances) {
                 $instanceId = $instance[0]
-                $state = $instance[1]
-                $type = $instance[2]
-                $name = $instance[3]
-                $publicIp = $instance[4]
+                $instanceType = $instance[1]
+                $state = $instance[2]
+                $publicIp = $instance[3]
+                $name = $instance[4]
                 
-                $statusIcon = if ($state -eq "running") { "✅" } else { "❌" }
-                Write-Host "   $statusIcon $instanceId ($type) - $state" -ForegroundColor $(if ($state -eq "running") { "Green" } else { "Red" })
+                Write-Host "   Instance: $instanceId ($instanceType)" -ForegroundColor Green
                 Write-Host "      Name: $name" -ForegroundColor Gray
-                if ($publicIp) {
-                    Write-Host "      Public IP: $publicIp" -ForegroundColor Gray
-                }
+                Write-Host "      State: $state" -ForegroundColor Gray
+                Write-Host "      Public IP: $publicIp" -ForegroundColor Gray
             }
             
             return $true
         }
         else {
-            Write-Host "   ⚠️ No EC2 instances found" -ForegroundColor Yellow
+            Write-Host "   No running instances found" -ForegroundColor Yellow
             return $false
         }
     }
     catch {
-        Write-Host "   ❌ Could not retrieve EC2 instances: $($_.Exception.Message)" -ForegroundColor Red
+        Write-Host "   Could not retrieve EC2 instances: $($_.Exception.Message)" -ForegroundColor Red
         return $false
     }
 }
 
-# Function to check VPC and networking
+# Function to check VPC networking
 function Test-VPCNetworking {
     param([string]$Region)
     
-    Write-Host "`n🌐 VPC and Networking Status:" -ForegroundColor Yellow
+    Write-Host "VPC Networking Status:" -ForegroundColor Yellow
     
     try {
-        # Check VPCs
-        $vpcs = aws ec2 describe-vpcs --region $Region --query 'Vpcs[].[VpcId,CidrBlock,State,Tags[?Key==`Name`].Value|[0]]' --output json 2>$null | ConvertFrom-Json
+        $vpcs = aws ec2 describe-vpcs --region $Region --query 'Vpcs[*].[VpcId,CidrBlock,State,Tags[?Key==`Name`].Value|[0]]' --output json 2>$null | ConvertFrom-Json
         
         if ($vpcs -and $vpcs.Count -gt 0) {
-            Write-Host "   VPCs:" -ForegroundColor Gray
+            Write-Host "   Found $($vpcs.Count) VPCs:" -ForegroundColor Gray
+            
             foreach ($vpc in $vpcs) {
                 $vpcId = $vpc[0]
                 $cidr = $vpc[1]
                 $state = $vpc[2]
                 $name = $vpc[3]
                 
-                $statusIcon = if ($state -eq "available") { "✅" } else { "❌" }
-                Write-Host "   $statusIcon $vpcId ($cidr) - $state" -ForegroundColor $(if ($state -eq "available") { "Green" } else { "Red" })
+                Write-Host "   VPC: $vpcId" -ForegroundColor Green
                 Write-Host "      Name: $name" -ForegroundColor Gray
+                Write-Host "      CIDR: $cidr" -ForegroundColor Gray
+                Write-Host "      State: $state" -ForegroundColor Gray
             }
+            
+            return $true
         }
-        
-        # Check subnets
-        $subnets = aws ec2 describe-subnets --region $Region --query 'Subnets[].[SubnetId,CidrBlock,State,Tags[?Key==`Name`].Value|[0]]' --output json 2>$null | ConvertFrom-Json
-        
-        if ($subnets -and $subnets.Count -gt 0) {
-            Write-Host "   Subnets:" -ForegroundColor Gray
-            foreach ($subnet in $subnets) {
-                $subnetId = $subnet[0]
-                $cidr = $subnet[1]
-                $state = $subnet[2]
-                $name = $subnet[3]
-                
-                $statusIcon = if ($state -eq "available") { "✅" } else { "❌" }
-                Write-Host "   $statusIcon $subnetId ($cidr) - $state" -ForegroundColor $(if ($state -eq "available") { "Green" } else { "Red" })
-                Write-Host "      Name: $name" -ForegroundColor Gray
-            }
+        else {
+            Write-Host "   No VPCs found" -ForegroundColor Yellow
+            return $false
         }
-        
-        return $true
     }
     catch {
-        Write-Host "   ❌ Could not retrieve VPC/Networking info: $($_.Exception.Message)" -ForegroundColor Red
+        Write-Host "   Could not retrieve VPCs: $($_.Exception.Message)" -ForegroundColor Red
         return $false
     }
 }
@@ -152,45 +149,40 @@ function Test-VPCNetworking {
 function Test-S3Buckets {
     param([string]$Region)
     
-    Write-Host "`n🪣 S3 Buckets Status:" -ForegroundColor Yellow
+    Write-Host "S3 Buckets Status:" -ForegroundColor Yellow
     
     try {
-        $buckets = aws s3api list-buckets --query 'Buckets[].Name' --output json 2>$null | ConvertFrom-Json
+        $bucketsOutput = aws s3 ls 2>$null
+        $buckets = $bucketsOutput | ForEach-Object { $_.Split()[2] }
         
         if ($buckets -and $buckets.Count -gt 0) {
-            Write-Host "   Found $($buckets.Count) buckets:" -ForegroundColor Gray
+            Write-Host "   Found $($buckets.Count) S3 buckets:" -ForegroundColor Gray
             
-            foreach ($bucket in $buckets) {
-                if ($bucket -like "*terraform-atlantis-workshop*") {
-                    Write-Host "   ✅ $bucket (Workshop bucket)" -ForegroundColor Green
-                    
-                    # Check bucket versioning
+            foreach ($bucketName in $buckets) {
+                Write-Host "   Bucket: $bucketName" -ForegroundColor Green
+                
+                if ($Detailed) {
                     try {
-                        $versioning = aws s3api get-bucket-versioning --bucket $bucket --query 'Status' --output text 2>$null
-                        if ($versioning -eq "Enabled") {
-                            Write-Host "      Versioning: ✅ Enabled" -ForegroundColor Green
-                        } else {
-                            Write-Host "      Versioning: ❌ Disabled" -ForegroundColor Red
+                        $encryption = aws s3api get-bucket-encryption --bucket $bucketName --query 'ServerSideEncryptionConfiguration.Rules[0].ApplyServerSideEncryptionByDefault.SSEAlgorithm' --output text 2>$null
+                        if ($encryption) {
+                            Write-Host "      Encryption: $encryption" -ForegroundColor Gray
                         }
                     }
                     catch {
-                        Write-Host "      Versioning: ⚠️ Could not check" -ForegroundColor Yellow
+                        Write-Host "      Encryption: Not configured" -ForegroundColor Yellow
                     }
-                }
-                else {
-                    Write-Host "   ℹ️ $bucket" -ForegroundColor Gray
                 }
             }
             
             return $true
         }
         else {
-            Write-Host "   ⚠️ No S3 buckets found" -ForegroundColor Yellow
+            Write-Host "   No S3 buckets found" -ForegroundColor Yellow
             return $false
         }
     }
     catch {
-        Write-Host "   ❌ Could not retrieve S3 buckets: $($_.Exception.Message)" -ForegroundColor Red
+        Write-Host "   Could not retrieve S3 buckets: $($_.Exception.Message)" -ForegroundColor Red
         return $false
     }
 }
@@ -199,28 +191,27 @@ function Test-S3Buckets {
 function Test-CloudWatchLogs {
     param([string]$Region)
     
-    Write-Host "`n📊 CloudWatch Logs Status:" -ForegroundColor Yellow
+    Write-Host "CloudWatch Logs Status:" -ForegroundColor Yellow
     
     try {
-        $logGroups = aws logs describe-log-groups --region $Region --query 'logGroups[?contains(logGroupName, `terraform-atlantis-workshop`)].{Name:logGroupName,Retention:retentionInDays}' --output json 2>$null | ConvertFrom-Json
+        $logGroups = aws logs describe-log-groups --region $Region --query 'logGroups[?contains(logGroupName, `terraform-atlantis-workshop`)].logGroupName' --output json 2>$null | ConvertFrom-Json
         
         if ($logGroups -and $logGroups.Count -gt 0) {
             Write-Host "   Found $($logGroups.Count) workshop log groups:" -ForegroundColor Gray
             
             foreach ($logGroup in $logGroups) {
-                Write-Host "   ✅ $($logGroup.Name)" -ForegroundColor Green
-                Write-Host "      Retention: $($logGroup.Retention) days" -ForegroundColor Gray
+                Write-Host "   Log Group: $logGroup" -ForegroundColor Green
             }
             
             return $true
         }
         else {
-            Write-Host "   ⚠️ No workshop log groups found" -ForegroundColor Yellow
+            Write-Host "   No workshop log groups found" -ForegroundColor Yellow
             return $false
         }
     }
     catch {
-        Write-Host "   ❌ Could not retrieve CloudWatch logs: $($_.Exception.Message)" -ForegroundColor Red
+        Write-Host "   Could not retrieve CloudWatch logs: $($_.Exception.Message)" -ForegroundColor Red
         return $false
     }
 }
@@ -229,7 +220,7 @@ function Test-CloudWatchLogs {
 function Test-SecurityGroups {
     param([string]$Region)
     
-    Write-Host "`n🔒 Security Groups Status:" -ForegroundColor Yellow
+    Write-Host "Security Groups Status:" -ForegroundColor Yellow
     
     try {
         $securityGroups = aws ec2 describe-security-groups --region $Region --query 'SecurityGroups[?contains(GroupName, `terraform-atlantis-workshop`)].{Name:GroupName,Id:GroupId,Description:Description}' --output json 2>$null | ConvertFrom-Json
@@ -238,26 +229,26 @@ function Test-SecurityGroups {
             Write-Host "   Found $($securityGroups.Count) workshop security groups:" -ForegroundColor Gray
             
             foreach ($sg in $securityGroups) {
-                Write-Host "   ✅ $($sg.Name) ($($sg.Id))" -ForegroundColor Green
+                Write-Host "   Security Group: $($sg.Name) ($($sg.Id))" -ForegroundColor Green
                 Write-Host "      Description: $($sg.Description)" -ForegroundColor Gray
             }
             
             return $true
         }
         else {
-            Write-Host "   ⚠️ No workshop security groups found" -ForegroundColor Yellow
+            Write-Host "   No workshop security groups found" -ForegroundColor Yellow
             return $false
         }
     }
     catch {
-        Write-Host "   ❌ Could not retrieve security groups: $($_.Exception.Message)" -ForegroundColor Red
+        Write-Host "   Could not retrieve security groups: $($_.Exception.Message)" -ForegroundColor Red
         return $false
     }
 }
 
 # Function to check Terraform state
 function Test-TerraformState {
-    Write-Host "`n🏗️ Terraform State Status:" -ForegroundColor Yellow
+    Write-Host "Terraform State Status:" -ForegroundColor Yellow
     
     if (Test-Path "terraform\terraform.tfstate") {
         try {
@@ -266,7 +257,7 @@ function Test-TerraformState {
             
             if ($stateInfo) {
                 $resources = $stateInfo.values.root_module.resources
-                Write-Host "   ✅ Terraform state found with $($resources.Count) resources" -ForegroundColor Green
+                Write-Host "   Terraform state found with $($resources.Count) resources" -ForegroundColor Green
                 
                 if ($Detailed) {
                     Write-Host "   Resources:" -ForegroundColor Gray
@@ -276,7 +267,7 @@ function Test-TerraformState {
                 }
             }
             else {
-                Write-Host "   ⚠️ Terraform state is empty" -ForegroundColor Yellow
+                Write-Host "   Terraform state is empty" -ForegroundColor Yellow
             }
             
             Set-Location ..
@@ -284,41 +275,34 @@ function Test-TerraformState {
         }
         catch {
             Set-Location ..
-            Write-Host "   ❌ Could not read Terraform state: $($_.Exception.Message)" -ForegroundColor Red
+            Write-Host "   Could not read Terraform state: $($_.Exception.Message)" -ForegroundColor Red
             return $false
         }
     }
     else {
-        Write-Host "   ⚠️ No Terraform state file found" -ForegroundColor Yellow
+        Write-Host "   No Terraform state file found" -ForegroundColor Yellow
         return $false
     }
 }
 
 # Function to check compliance validation
 function Test-ComplianceValidation {
-    Write-Host "`n🛡️ Compliance Validation Status:" -ForegroundColor Yellow
+    Write-Host "Compliance Validation Status:" -ForegroundColor Yellow
     
     if (Test-Path "terraform\terraform.tfstate") {
         try {
             Set-Location terraform
             
-            # Get compliance output in JSON format
             $complianceOutput = terraform output -json compliance_validation_status 2>$null | ConvertFrom-Json
             
             if ($complianceOutput) {
-                Write-Host "   ✅ Compliance validation active" -ForegroundColor Green
+                Write-Host "   Compliance validation active" -ForegroundColor Green
                 Write-Host "   Total instances: $($complianceOutput.total_instances)" -ForegroundColor Gray
                 Write-Host "   Total buckets: $($complianceOutput.total_buckets)" -ForegroundColor Gray
                 Write-Host "   Message: $($complianceOutput.message)" -ForegroundColor Gray
-                
-                if ($Detailed) {
-                    Write-Host "   Allowed instance types: $($complianceOutput.allowed_instance_types -join ', ')" -ForegroundColor Gray
-                    Write-Host "   Required tags: $($complianceOutput.required_tags -join ', ')" -ForegroundColor Gray
-                    Write-Host "   Recommended tags: $($complianceOutput.recommended_tags -join ', ')" -ForegroundColor Gray
-                }
             }
             else {
-                Write-Host "   ⚠️ Compliance validation not configured" -ForegroundColor Yellow
+                Write-Host "   Compliance validation not configured" -ForegroundColor Yellow
             }
             
             Set-Location ..
@@ -326,12 +310,12 @@ function Test-ComplianceValidation {
         }
         catch {
             Set-Location ..
-            Write-Host "   ❌ Could not check compliance validation: $($_.Exception.Message)" -ForegroundColor Red
+            Write-Host "   Could not check compliance validation: $($_.Exception.Message)" -ForegroundColor Red
             return $false
         }
     }
     else {
-        Write-Host "   ⚠️ No Terraform state to check compliance" -ForegroundColor Yellow
+        Write-Host "   No Terraform state to check compliance" -ForegroundColor Yellow
         return $false
     }
 }
@@ -340,57 +324,55 @@ function Test-ComplianceValidation {
 function Test-WebServerAccess {
     param([string]$Region)
     
-    Write-Host "`n🌐 Web Server Accessibility Test:" -ForegroundColor Yellow
+    Write-Host "Web Server Accessibility Test:" -ForegroundColor Yellow
     
     try {
-        # Get public IP of web server
         $webInstance = aws ec2 describe-instances --region $Region --filters "Name=tag:Name,Values=*web-server*" "Name=instance-state-name,Values=running" --query 'Reservations[].Instances[].PublicIpAddress' --output text 2>$null
         
         if ($webInstance) {
             Write-Host "   Web server public IP: $webInstance" -ForegroundColor Gray
             
-            # Test HTTP connectivity
             try {
                 $response = Invoke-WebRequest -Uri "http://$webInstance" -TimeoutSec 10 -UseBasicParsing
                 if ($response.StatusCode -eq 200) {
-                    Write-Host "   ✅ Web server is accessible (HTTP 200)" -ForegroundColor Green
+                    Write-Host "   Web server is accessible (HTTP 200)" -ForegroundColor Green
                     return $true
                 }
                 else {
-                    Write-Host "   ⚠️ Web server responded with status: $($response.StatusCode)" -ForegroundColor Yellow
+                    Write-Host "   Web server responded with status: $($response.StatusCode)" -ForegroundColor Yellow
                     return $false
                 }
             }
             catch {
-                Write-Host "   ❌ Web server is not accessible: $($_.Exception.Message)" -ForegroundColor Red
+                Write-Host "   Web server is not accessible: $($_.Exception.Message)" -ForegroundColor Red
                 return $false
             }
         }
         else {
-            Write-Host "   ⚠️ No web server instance found" -ForegroundColor Yellow
+            Write-Host "   No web server instance found" -ForegroundColor Yellow
             return $false
         }
     }
     catch {
-        Write-Host "   ❌ Could not test web server access: $($_.Exception.Message)" -ForegroundColor Red
+        Write-Host "   Could not test web server access: $($_.Exception.Message)" -ForegroundColor Red
         return $false
     }
 }
 
 # Main execution
-Write-Host "`n🎯 AWS Production Health Check" -ForegroundColor Magenta
+Write-Host "AWS Production Health Check" -ForegroundColor Magenta
 
 # Check AWS credentials
 $credentialsValid = Test-AWSCredentials
 if (-not $credentialsValid) {
-    Write-Host "`n❌ Cannot proceed without valid AWS credentials" -ForegroundColor Red
+    Write-Host "Cannot proceed without valid AWS credentials" -ForegroundColor Red
     exit 1
 }
 
 # Check AWS region
 $region = Test-AWSRegion -Region $Region
 if (-not $region) {
-    Write-Host "`n❌ Cannot proceed without valid AWS region" -ForegroundColor Red
+    Write-Host "Cannot proceed without valid AWS region" -ForegroundColor Red
     exit 1
 }
 
@@ -407,28 +389,28 @@ $checks = @{
 }
 
 # Summary
-Write-Host "`n📊 Health Summary:" -ForegroundColor Magenta
+Write-Host "Health Summary:" -ForegroundColor Magenta
 $healthyCount = ($checks.Values | Where-Object { $_ }).Count
 $totalCount = $checks.Count
 
 Write-Host "   Healthy Components: $healthyCount/$totalCount" -ForegroundColor $(if ($healthyCount -eq $totalCount) { "Green" } else { "Yellow" })
 
 foreach ($check in $checks.GetEnumerator()) {
-    $status = if ($check.Value) { "✅" } else { "❌" }
+    $status = if ($check.Value) { "OK" } else { "FAIL" }
     Write-Host "   $status $($check.Key)" -ForegroundColor $(if ($check.Value) { "Green" } else { "Red" })
 }
 
 if ($healthyCount -eq $totalCount) {
-    Write-Host "`n🎉 All AWS infrastructure components are healthy!" -ForegroundColor Green
+    Write-Host "All AWS infrastructure components are healthy!" -ForegroundColor Green
 }
 else {
-    Write-Host "`n⚠️ Some components need attention. Review the details above." -ForegroundColor Yellow
+    Write-Host "Some components need attention. Review the details above." -ForegroundColor Yellow
 }
 
-Write-Host "`n🔗 AWS Console Links:" -ForegroundColor Cyan
+Write-Host "AWS Console Links:" -ForegroundColor Cyan
 Write-Host "   - EC2 Dashboard: https://console.aws.amazon.com/ec2/v2/home?region=$region" -ForegroundColor Gray
 Write-Host "   - VPC Dashboard: https://console.aws.amazon.com/vpc/home?region=$region" -ForegroundColor Gray
 Write-Host "   - S3 Console: https://console.aws.amazon.com/s3/home" -ForegroundColor Gray
 Write-Host "   - CloudWatch: https://console.aws.amazon.com/cloudwatch/home?region=$region" -ForegroundColor Gray
 
-Write-Host "`n✅ AWS Production Health Check Completed!" -ForegroundColor Green
+Write-Host "AWS Production Health Check Completed!" -ForegroundColor Green
