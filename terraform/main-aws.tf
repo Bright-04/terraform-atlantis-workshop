@@ -151,7 +151,7 @@ resource "aws_instance" "web" {
   subnet_id              = aws_subnet.public.id
   vpc_security_group_ids = [aws_security_group.web.id]
   key_name               = var.key_pair_name != "" ? var.key_pair_name : null
-  iam_instance_profile   = aws_iam_instance_profile.ec2_profile.name  # Fixed: Added IAM profile
+  iam_instance_profile   = aws_iam_instance_profile.ec2_profile.name # Fixed: Added IAM profile
 
   user_data = base64encode(<<-EOF
     #!/bin/bash
@@ -220,7 +220,7 @@ resource "aws_s3_bucket_public_access_block" "workshop" {
 # Test EC2 instance with policy compliance
 resource "aws_instance" "policy_test" {
   ami                    = data.aws_ami.amazon_linux.id
-  instance_type          = "t3.small"  # Compliant instance type
+  instance_type          = "t3.small" # Compliant instance type
   subnet_id              = aws_subnet.public.id
   vpc_security_group_ids = [aws_security_group.policy_test.id]
 
