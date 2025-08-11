@@ -71,73 +71,171 @@ jobs:
                       const fs = require('fs');
                       const plan = fs.readFileSync('terraform/tfplan', 'base64');
 
-                      // Parse terraform plan output to get resource changes
-                      const planOutput = fs.readFileSync('terraform/plan.txt', 'utf8');
+                                             // Parse terraform plan output to get resource changes
+                       const planOutput = fs.readFileSync('terraform/plan.txt', 'utf8');
+                       
+                       // Extract resource change counts
+                       const addMatch = planOutput.match(/(\d+) to add/);
+                       const changeMatch = planOutput.match(/(\d+) to change/);
+                       const destroyMatch = planOutput.match(/(\d+) to destroy/);
+                       const noChangesMatch = planOutput.match(/No changes\. Objects have not changed/);
+                       
+                       // Extract specific resource changes
+                       const resourceChanges = [];
+                       const lines = planOutput.split('\n');
+                       let currentResource = null;
+                       
+                       for (const line of lines) {
+                         // Match resource creation/modification
+                         const resourceMatch = line.match(/^(\s*)#\s*([^#]+)\s*will be created/);
+                         const resourceChangeMatch = line.match(/^(\s*)#\s*([^#]+)\s*will be updated/);
+                         const resourceDestroyMatch = line.match(/^(\s*)#\s*([^#]+)\s*will be destroyed/);
+                         
+                         if (resourceMatch) {
+                           currentResource = { type: 'create', name: resourceMatch[2].trim() };
+                         } else if (resourceChangeMatch) {
+                           currentResource = { type: 'update', name: resourceChangeMatch[2].trim() };
+                         } else if (resourceDestroyMatch) {
+                           currentResource = { type: 'destroy', name: resourceDestroyMatch[2].trim() };
+                         }
+                         
+                         // Extract key attributes for new resources
+                         if (currentResource && line.includes('+') && !line.startsWith('#')) {
+                           const attrMatch = line.match(/^\s*\+([^:]+):\s*"([^"]+)"/);
+                           if (attrMatch) {
+                             const attr = attrMatch[1].trim();
+                             const value = attrMatch[2];
+                             
+                             // Only include important attributes
+                             const importantAttrs = ['name', 'instance_type', 'ami', 'vpc_id', 'subnet_id', 'bucket', 'region', 'cidr_block', 'availability_zone', 'port', 'protocol', 'cidr_blocks'];
+                             if (importantAttrs.some(importantAttr => importantAttr.toLowerCase() === attr.toLowerCase())) {
+                               if (!currentResource.attributes) currentResource.attributes = {};
+                               currentResource.attributes[attr] = value;
+                             }
+                           }
+                         }
+                         
+                         // Extract changes in existing resources
+                         if (currentResource && line.includes('~') && !line.startsWith('#')) {
+                           const changeMatch = line.match(/^\s*~([^:]+):\s*"([^"]+)"\s*->\s*"([^"]+)"/);
+                           if (changeMatch) {
+                             const attr = changeMatch[1].trim();
+                             const oldValue = changeMatch[2];
+                             const newValue = changeMatch[3];
+                             
+                             if (!currentResource.changes) currentResource.changes = {};
+                             currentResource.changes[attr] = { from: oldValue, to: newValue };
+                           }
+                         }
+                         
+                         // End of resource block
+                         if (currentResource && line.trim() === '') {
+                           resourceChanges.push(currentResource);
+                           currentResource = null;
+                         }
+                       }
+                       
+                       let planSummary = '';
+                       let changeDetails = '';
+                       let technicalDetails = '';
+                       
+                       if (noChangesMatch) {
+                         planSummary = '**✅ No Changes Detected**\n- Infrastructure is up to date';
+                         changeDetails = 'No resources will be added, modified, or destroyed.';
+                       } else {
+                         const toAdd = addMatch ? parseInt(addMatch[1]) : 0;
+                         const toChange = changeMatch ? parseInt(changeMatch[1]) : 0;
+                         const toDestroy = destroyMatch ? parseInt(destroyMatch[1]) : 0;
+                         
+                         planSummary = `**📊 Resource Changes:**\n- ➕ **${toAdd}** to add\n- 🔄 **${toChange}** to change\n- 🗑️ **${toDestroy}** to destroy`;
+                         
+                         // Build technical details
+                         const creates = resourceChanges.filter(r => r.type === 'create');
+                         const updates = resourceChanges.filter(r => r.type === 'update');
+                         const destroys = resourceChanges.filter(r => r.type === 'destroy');
+                         
+                                                    if (creates.length > 0) {
+                             technicalDetails += '\n**🆕 New Resources:**\n';
+                             creates.forEach(resource => {
+                               const resourceType = resource.name.split('.')[0];
+                               const resourceName = resource.name.split('.')[1] || resource.name;
+                               technicalDetails += `- \`${resourceType}\` (${resourceName})\n`;
+                               
+                               if (resource.attributes) {
+                                 Object.entries(resource.attributes).forEach(([attr, value]) => {
+                                   if (['name', 'instance_type', 'ami', 'vpc_id', 'subnet_id', 'bucket', 'region', 'port', 'protocol', 'cidr_blocks'].includes(attr)) {
+                                     technicalDetails += `  - ${attr}: \`${value}\`\n`;
+                                   }
+                                 });
+                               }
+                             });
+                           }
+                         
+                         if (updates.length > 0) {
+                           technicalDetails += '\n**🔄 Modified Resources:**\n';
+                           updates.forEach(resource => {
+                             const resourceType = resource.name.split('.')[0];
+                             const resourceName = resource.name.split('.')[1] || resource.name;
+                             technicalDetails += `- \`${resourceType}\` (${resourceName})\n`;
+                             
+                             if (resource.changes) {
+                               Object.entries(resource.changes).forEach(([attr, change]) => {
+                                 technicalDetails += `  - ${attr}: \`${change.from}\` → \`${change.to}\`\n`;
+                               });
+                             }
+                           });
+                         }
+                         
+                         if (destroys.length > 0) {
+                           technicalDetails += '\n**🗑️ Resources to Destroy:**\n';
+                           destroys.forEach(resource => {
+                             const resourceType = resource.name.split('.')[0];
+                             const resourceName = resource.name.split('.')[1] || resource.name;
+                             technicalDetails += `- \`${resourceType}\` (${resourceName})\n`;
+                           });
+                         }
+                       }
 
-                      // Extract resource change counts
-                      const addMatch = planOutput.match(/(\d+) to add/);
-                      const changeMatch = planOutput.match(/(\d+) to change/);
-                      const destroyMatch = planOutput.match(/(\d+) to destroy/);
-                      const noChangesMatch = planOutput.match(/No changes\. Objects have not changed/);
+                                             const comment = `## Terraform Plan 📋
 
-                      let planSummary = '';
-                      let changeDetails = '';
+                       ${planSummary}
 
-                      if (noChangesMatch) {
-                        planSummary = '**✅ No Changes Detected**\n- Infrastructure is up to date';
-                        changeDetails = 'No resources will be added, modified, or destroyed.';
-                      } else {
-                        const toAdd = addMatch ? parseInt(addMatch[1]) : 0;
-                        const toChange = changeMatch ? parseInt(changeMatch[1]) : 0;
-                        const toDestroy = destroyMatch ? parseInt(destroyMatch[1]) : 0;
-                        
-                        planSummary = `**📊 Resource Changes:**\n- ➕ **${toAdd}** to add\n- 🔄 **${toChange}** to change\n- 🗑️ **${toDestroy}** to destroy`;
-                        
-                        if (toAdd > 0) changeDetails += `\n- **New Resources:** ${toAdd} resource(s) will be created`;
-                        if (toChange > 0) changeDetails += `\n- **Modified Resources:** ${toChange} resource(s) will be updated`;
-                        if (toDestroy > 0) changeDetails += `\n- **Removed Resources:** ${toDestroy} resource(s) will be destroyed`;
-                      }
+                       **🔧 Technical Changes:**
+                       ${technicalDetails}
 
-                      const comment = `## Terraform Plan 📋
+                       **📋 Workflow Status:**
+                       - ✅ **terraform-plan**: Completed successfully
+                       - ⏳ **terraform-apply**: Will run when PR is merged to main
+                       - ⏳ **health-check**: Will run after apply completes
+                       - ⏸️ **cleanup**: Manual trigger only (for destroy operations)
 
-                      ${planSummary}
+                       **🔒 Security & Compliance:**
+                       - ✅ Policy validation passed
+                       - ✅ Cost controls enforced
+                       - ✅ Security requirements met
 
-                      **🔍 Change Details:**
-                      ${changeDetails}
+                       **📝 Next Steps:**
+                       1. Review the technical changes above
+                       2. Approve this PR if changes look correct
+                       3. Merge to trigger automatic apply and health check
 
-                      **📋 Workflow Status:**
-                      - ✅ **terraform-plan**: Completed successfully
-                      - ⏳ **terraform-apply**: Will run when PR is merged to main
-                      - ⏳ **health-check**: Will run after apply completes
-                      - ⏸️ **cleanup**: Manual trigger only (for destroy operations)
+                       <details>
+                       <summary>📄 Full Plan Output</summary>
 
-                      **🔒 Security & Compliance:**
-                      - ✅ Policy validation passed
-                      - ✅ Cost controls enforced
-                      - ✅ Security requirements met
+                       \`\`\`
+                       ${planOutput}
+                       \`\`\`
 
-                      **📝 Next Steps:**
-                      1. Review the plan details below
-                      2. Approve this PR if changes look correct
-                      3. Merge to trigger automatic apply and health check
+                       </details>
 
-                      <details>
-                      <summary>📄 Detailed Plan Output</summary>
+                       <details>
+                       <summary>🔧 Plan File (Base64)</summary>
 
-                      \`\`\`
-                      ${planOutput}
-                      \`\`\`
+                       \`\`\`
+                       ${plan}
+                       \`\`\`
 
-                      </details>
-
-                      <details>
-                      <summary>🔧 Plan File (Base64)</summary>
-
-                      \`\`\`
-                      ${plan}
-                      \`\`\`
-
-                      </details>`;
+                       </details>`;
 
                       github.rest.issues.createComment({
                         issue_number: context.issue.number,
