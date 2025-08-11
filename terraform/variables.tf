@@ -13,7 +13,7 @@ variable "environment" {
 variable "project_name" {
   description = "Project name for resource naming"
   type        = string
-  default     = "terraform-atlantis-workshop"
+  default     = "terraform-atlantis-workshop-v2"
 }
 
 variable "vpc_cidr" {
@@ -54,3 +54,4 @@ variable "s3_bucket_suffix" {
 # Testing GitHub Actions - 08/11/2025 23:23:42
 # Testing enhanced technical comments - changed instance_type from t3.micro to t3.small
 # Testing enhanced technical comments - changed environment from workshop to production
+# Testing enhanced technical comments - changed project_name to v2 for PR testing
