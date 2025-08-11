@@ -18,13 +18,20 @@ resource "aws_instance" "test_violation" {
 
 # Compliant: Following naming convention
 resource "aws_s3_bucket" "test_violation" {
-  bucket = "terraform-atlantis-workshop-test-violation" # Fixed: Changed to follow naming convention
+  bucket = "terraform-atlantis-workshop-test-violation-${random_string.bucket_suffix.result}" # Fixed: Added random suffix for uniqueness
 
   tags = {
     Environment = "test"
     Project     = "terraform-atlantis-workshop"
     CostCenter  = "workshop-training"
   }
+}
+
+# Random string for bucket name uniqueness
+resource "random_string" "bucket_suffix" {
+  length  = 8
+  special = false
+  upper   = false
 }
 
 # S3 Bucket encryption for test bucket
@@ -85,7 +92,7 @@ resource "aws_security_group" "test_violation" {
 
 # Compliant: All required tags present
 resource "aws_ebs_volume" "test_violation" {
-  availability_zone = "ap-southeast-1a" # Fixed: Changed to match configured region
+  availability_zone = data.aws_availability_zones.available.names[0] # Fixed: Use data source for valid AZ
   size              = 20
 
   tags = {
