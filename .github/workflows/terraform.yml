@@ -309,13 +309,13 @@ jobs:
                       echo "S3 bucket exists, importing to state..."
                       terraform import aws_s3_bucket.workshop terraform-atlantis-workshop-workshop-bucket || true
                   fi
-                  
+
                   # Check if CloudWatch log group exists
                   if aws logs describe-log-groups --log-group-name-prefix "/aws/ec2/terraform-atlantis-workshop" --query 'logGroups[?logGroupName==`/aws/ec2/terraform-atlantis-workshop`]' --output text | grep -q "/aws/ec2/terraform-atlantis-workshop"; then
                       echo "CloudWatch log group exists, importing to state..."
                       terraform import aws_cloudwatch_log_group.application "/aws/ec2/terraform-atlantis-workshop" || true
                   fi
-                  
+
                   # Check if IAM role exists
                   if aws iam get-role --role-name "terraform-atlantis-workshop-ec2-role" >/dev/null 2>&1; then
                       echo "IAM role exists, importing to state..."
