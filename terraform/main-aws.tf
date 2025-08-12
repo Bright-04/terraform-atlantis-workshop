@@ -427,7 +427,7 @@ resource "aws_s3_bucket_versioning" "test_violation" {
 resource "aws_instance" "web" {
   ami                    = data.aws_ami.amazon_linux.id
   instance_type          = var.instance_type
-  key_name               = var.key_pair_name
+  key_name               = var.key_pair_name != "" ? var.key_pair_name : null
   vpc_security_group_ids = [aws_security_group.web.id]
   subnet_id              = aws_subnet.public.id
   iam_instance_profile   = aws_iam_instance_profile.ec2_profile.name
@@ -446,7 +446,7 @@ resource "aws_instance" "web" {
 resource "aws_instance" "policy_test" {
   ami                    = data.aws_ami.amazon_linux.id
   instance_type          = "t3.small"
-  key_name               = var.key_pair_name
+  key_name               = var.key_pair_name != "" ? var.key_pair_name : null
   vpc_security_group_ids = [aws_security_group.policy_test.id]
   subnet_id              = aws_subnet.private.id
 
@@ -461,7 +461,7 @@ resource "aws_instance" "policy_test" {
 resource "aws_instance" "test_violation" {
   ami                    = data.aws_ami.amazon_linux.id
   instance_type          = "t3.micro"
-  key_name               = var.key_pair_name
+  key_name               = var.key_pair_name != "" ? var.key_pair_name : null
   vpc_security_group_ids = [aws_security_group.test_violation.id]
   subnet_id              = aws_subnet.public.id
 
