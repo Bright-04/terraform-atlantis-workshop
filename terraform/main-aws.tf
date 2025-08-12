@@ -21,6 +21,15 @@ data "aws_availability_zones" "available" {
   state = "available"
 }
 
+# Data source for existing internet gateway to avoid limit exceeded
+data "aws_internet_gateway" "existing" {
+  count = 1
+  filter {
+    name   = "attachment.vpc-id"
+    values = [aws_vpc.main.id]
+  }
+}
+
 # Data source for Amazon Linux 2 AMI (AWS)
 data "aws_ami" "amazon_linux" {
   most_recent = true
@@ -48,13 +57,19 @@ resource "aws_vpc" "main" {
   }
 }
 
-# Internet Gateway
+# Internet Gateway - Create only if none exists
 resource "aws_internet_gateway" "main" {
+  count  = length(data.aws_internet_gateway.existing) == 0 ? 1 : 0
   vpc_id = aws_vpc.main.id
 
   tags = {
     Name = "${var.project_name}-igw"
   }
+}
+
+# Use existing internet gateway if available
+locals {
+  internet_gateway_id = length(data.aws_internet_gateway.existing) > 0 ? data.aws_internet_gateway.existing[0].id : aws_internet_gateway.main[0].id
 }
 
 # Public Subnet
@@ -88,7 +103,7 @@ resource "aws_route_table" "public" {
 
   route {
     cidr_block = "0.0.0.0/0"
-    gateway_id = aws_internet_gateway.main.id
+    gateway_id = local.internet_gateway_id
   }
 
   tags = {
@@ -199,7 +214,7 @@ resource "aws_instance" "web" {
 
 # S3 Bucket for production data
 resource "aws_s3_bucket" "workshop" {
-  bucket = "${var.project_name}-${var.s3_bucket_suffix}"
+  bucket = "${var.project_name}-${var.s3_bucket_suffix}-${random_string.bucket_suffix.result}"
 
   tags = {
     Name       = "${var.project_name}-${var.s3_bucket_suffix}"
@@ -288,7 +303,7 @@ resource "aws_instance" "policy_test" {
 
 # Security group with restricted access
 resource "aws_security_group" "policy_test" {
-  name        = "policy-test-sg"
+  name        = "${var.project_name}-policy-test-sg"
   description = "Security group with restricted access for compliance"
   vpc_id      = aws_vpc.main.id
 
@@ -467,7 +482,7 @@ resource "aws_db_parameter_group" "main" {
 
 # Security Group for RDS
 resource "aws_security_group" "rds" {
-  name        = "${var.project_name}-rds-sg"
+  name        = "${var.project_name}-rds-db-sg"
   description = "Security group for RDS database"
   vpc_id      = aws_vpc.main.id
 
@@ -496,7 +511,7 @@ resource "aws_security_group" "rds" {
 
 # RDS Instance
 resource "aws_db_instance" "main" {
-  identifier = "${var.project_name}-db"
+  identifier = "${var.project_name}-db-${random_string.bucket_suffix.result}"
 
   engine         = "postgres"
   engine_version = var.db_engine_version

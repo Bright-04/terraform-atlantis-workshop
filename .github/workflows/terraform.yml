@@ -52,8 +52,18 @@ jobs:
                   else
                       echo "❌ Terraform formatting check failed"
                       echo "Please run 'terraform fmt' to fix formatting issues"
-                      echo "Files that need formatting:"
+                      echo ""
+                      echo "📋 Files that need formatting:"
                       terraform fmt -check -recursive || true
+                      echo ""
+                      echo "🔧 To fix locally, run:"
+                      echo "   terraform fmt terraform/"
+                      echo ""
+                      echo "📝 Common formatting issues:"
+                      echo "- Inconsistent indentation"
+                      echo "- Missing or extra spaces around operators"
+                      echo "- Inconsistent line endings"
+                      echo "- Missing newlines at end of files"
                       exit 1
                   fi
 
@@ -608,13 +618,54 @@ jobs:
         permissions:
             contents: read
             pull-requests: write
+            actions: read
 
         steps:
             - name: Comment on Failure
               uses: actions/github-script@v7
               with:
                   script: |
-                      const failedJobs = context.job.split(',').filter(job => job !== 'failure-notification');
+                      // Get failed jobs from the workflow context
+                      const failedJobs = ['terraform-plan', 'terraform-apply', 'health-check'].filter(job => 
+                        '${{ needs.terraform-plan.result }}' === 'failure' || 
+                        '${{ needs.terraform-apply.result }}' === 'failure' || 
+                        '${{ needs.health-check.result }}' === 'failure'
+                      );
+                      
+                      let specificGuidance = '';
+                      
+                      if (failedJobs.includes('terraform-plan')) {
+                        specificGuidance += `
+                        **🔧 Specific Fixes for terraform-plan:**
+                        
+                        **If Format Check Failed:**
+                        \`\`\`bash
+                        # Run locally to fix formatting
+                        terraform fmt terraform/
+                        
+                        # Then commit and push
+                        git add .
+                        git commit -m "fix: Format Terraform files"
+                        git push
+                        \`\`\`
+                        
+                        **If Validation Failed:**
+                        \`\`\`bash
+                        # Check syntax locally
+                        terraform validate
+                        
+                        # Common issues:
+                        # - Missing provider configuration
+                        # - Invalid resource references
+                        # - Syntax errors in .tf files
+                        \`\`\`
+                        
+                        **If Plan Failed:**
+                        - Check AWS credentials and permissions
+                        - Verify resource naming doesn't conflict
+                        - Review error messages in logs
+                        `;
+                      }
                       
                       const comment = `## ❌ Workflow Failed
 
@@ -623,26 +674,25 @@ jobs:
                       **📋 Failed Jobs:**
                       ${failedJobs.map(job => `- ❌ **${job}**: Failed`).join('\n')}
 
-                      **🔍 Common Issues:**
-                      - **Format Check Failed**: Run \`terraform fmt\` to fix formatting
-                      - **Validation Failed**: Check Terraform syntax and configuration
-                      - **Plan Failed**: Review resource dependencies and AWS permissions
-                      - **Apply Failed**: Check for resource conflicts or AWS service limits
+                      **🔧 Quick Fixes:**
+                      ${specificGuidance}
 
-                      **🛠️ Troubleshooting Steps:**
-                      1. Check the workflow logs for specific error messages
-                      2. Verify AWS credentials and permissions
-                      3. Ensure all required variables are set
-                      4. Check for resource naming conflicts
+                      **🛠️ General Troubleshooting:**
+                      1. **Format Issues**: Run \`terraform fmt terraform/\` locally
+                      2. **Validation Issues**: Check syntax with \`terraform validate\`
+                      3. **Resource Conflicts**: Update resource names or CIDR ranges
+                      4. **AWS Limits**: Check for service limits or existing resources
 
-                      **📞 Support:**
-                      - Review the [workshop documentation](https://github.com/${{ github.repository }}/blob/main/docs/)
-                      - Check [troubleshooting guide](https://github.com/${{ github.repository }}/blob/main/docs/workshop-guide/09-TROUBLESHOOTING.md)
+                      **📞 Support Resources:**
+                      - [Workshop Documentation](https://github.com/${{ github.repository }}/blob/main/docs/)
+                      - [Troubleshooting Guide](https://github.com/${{ github.repository }}/blob/main/docs/workshop-guide/09-TROUBLESHOOTING.md)
+                      - [Terraform Best Practices](https://www.terraform.io/docs/cloud/guides/recommended-practices/index.html)
 
                       **🔄 Next Steps:**
-                      - Fix the issues identified in the logs
-                      - Push the fixes to trigger a new workflow run
-                      - Monitor the new workflow execution`;
+                      1. Fix the issues identified above
+                      2. Commit and push your changes
+                      3. Monitor the new workflow run
+                      4. Check the logs for any remaining issues`;
 
                       // Comment on the PR if it's a pull request
                       if (context.eventName === 'pull_request') {
