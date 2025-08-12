@@ -304,7 +304,7 @@ jobs:
               working-directory: terraform
               run: |
                   echo "Checking for orphaned resources that might cause conflicts..."
-                  
+
                   # Check if there are any orphaned IAM instance profiles
                   if aws iam get-instance-profile --instance-profile-name "terraform-atlantis-workshop-ec2-profile" >/dev/null 2>&1; then
                       echo "Found existing IAM instance profile, checking if it's attached to any instances..."
@@ -323,7 +323,7 @@ jobs:
               working-directory: terraform
               run: |
                   echo "Checking for existing resources..."
-                  
+
                   # Check if S3 bucket exists
                   if aws s3api head-bucket --bucket "terraform-atlantis-workshop-workshop-bucket" 2>/dev/null; then
                       echo "S3 bucket exists, importing to state..."
@@ -374,7 +374,7 @@ jobs:
               run: |
                   echo "Planning and applying changes..."
                   terraform plan -out=tfplan
-                  
+
                   # Try to apply with auto-approve
                   if terraform apply -auto-approve; then
                       echo "Apply completed successfully"
