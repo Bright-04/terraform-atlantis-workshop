@@ -17,8 +17,22 @@ workflows:
         plan:
             steps:
                 - run: terraform init
+                - run: terraform fmt -check -recursive
+                - run: terraform validate
                 - run: terraform plan -out=tfplan
                 - run: terraform show tfplan
+                - run: |
+                    if [ $? -eq 0 ]; then
+                      echo "## ✅ Terraform Plan Successful" >> $GITHUB_STEP_SUMMARY
+                      echo "All checks passed successfully!" >> $GITHUB_STEP_SUMMARY
+                    else
+                      echo "## ❌ Terraform Plan Failed" >> $GITHUB_STEP_SUMMARY
+                      echo "Please check the logs above for details." >> $GITHUB_STEP_SUMMARY
+                      echo "Common issues:" >> $GITHUB_STEP_SUMMARY
+                      echo "- Run 'terraform fmt' to fix formatting" >> $GITHUB_STEP_SUMMARY
+                      echo "- Run 'terraform validate' to check syntax" >> $GITHUB_STEP_SUMMARY
+                      exit 1
+                    fi
         apply:
             steps:
                 - run: terraform init
