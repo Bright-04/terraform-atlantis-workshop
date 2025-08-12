@@ -300,10 +300,30 @@ jobs:
               working-directory: terraform
               run: terraform init
 
+            - name: Clean Up Orphaned Resources
+              working-directory: terraform
+              run: |
+                  echo "Checking for orphaned resources that might cause conflicts..."
+                  
+                  # Check if there are any orphaned IAM instance profiles
+                  if aws iam get-instance-profile --instance-profile-name "terraform-atlantis-workshop-ec2-profile" >/dev/null 2>&1; then
+                      echo "Found existing IAM instance profile, checking if it's attached to any instances..."
+                      
+                      # Check if the instance profile is attached to any instances
+                      ATTACHED_INSTANCES=$(aws ec2 describe-instances --filters "Name=iam-instance-profile.arn,Values=*terraform-atlantis-workshop-ec2-profile*" --query 'Reservations[].Instances[].InstanceId' --output text 2>/dev/null)
+                      
+                      if [ -z "$ATTACHED_INSTANCES" ] || [ "$ATTACHED_INSTANCES" = "None" ]; then
+                          echo "Instance profile is not attached to any instances, it's safe to proceed"
+                      else
+                          echo "Instance profile is attached to instances: $ATTACHED_INSTANCES"
+                      fi
+                  fi
+
             - name: Check for Existing Resources
               working-directory: terraform
               run: |
                   echo "Checking for existing resources..."
+                  
                   # Check if S3 bucket exists
                   if aws s3api head-bucket --bucket "terraform-atlantis-workshop-workshop-bucket" 2>/dev/null; then
                       echo "S3 bucket exists, importing to state..."
@@ -322,22 +342,70 @@ jobs:
                       terraform import aws_iam_role.ec2_role terraform-atlantis-workshop-ec2-role || true
                   fi
 
+                  # Check if IAM instance profile exists
+                  if aws iam get-instance-profile --instance-profile-name "terraform-atlantis-workshop-ec2-profile" >/dev/null 2>&1; then
+                      echo "IAM instance profile exists, importing to state..."
+                      terraform import aws_iam_instance_profile.ec2_profile terraform-atlantis-workshop-ec2-profile || true
+                  fi
+
+                  # Check if VPC exists
+                  VPC_ID=$(aws ec2 describe-vpcs --filters "Name=tag:Name,Values=terraform-atlantis-workshop-vpc" --query 'Vpcs[0].VpcId' --output text 2>/dev/null)
+                  if [ "$VPC_ID" != "None" ] && [ "$VPC_ID" != "" ]; then
+                      echo "VPC exists, importing to state..."
+                      terraform import aws_vpc.main "$VPC_ID" || true
+                  fi
+
+                  # Check if security groups exist
+                  SG_ID=$(aws ec2 describe-security-groups --filters "Name=group-name,Values=terraform-atlantis-workshop-web-sg" --query 'SecurityGroups[0].GroupId' --output text 2>/dev/null)
+                  if [ "$SG_ID" != "None" ] && [ "$SG_ID" != "" ]; then
+                      echo "Security group exists, importing to state..."
+                      terraform import aws_security_group.web "$SG_ID" || true
+                  fi
+
+                  # Check if EC2 instances exist
+                  INSTANCE_ID=$(aws ec2 describe-instances --filters "Name=tag:Name,Values=terraform-atlantis-workshop-web-server" "Name=instance-state-name,Values=running" --query 'Reservations[0].Instances[0].InstanceId' --output text 2>/dev/null)
+                  if [ "$INSTANCE_ID" != "None" ] && [ "$INSTANCE_ID" != "" ]; then
+                      echo "EC2 instance exists, importing to state..."
+                      terraform import aws_instance.web "$INSTANCE_ID" || true
+                  fi
+
             - name: Terraform Plan and Apply
               working-directory: terraform
               run: |
                   echo "Planning and applying changes..."
                   terraform plan -out=tfplan
-                  terraform apply -auto-approve || {
-                      echo "Apply failed, checking if resources already exist..."
-                      terraform plan -detailed-exitcode
-                      if [ $? -eq 2 ]; then
-                          echo "Resources already exist, applying with refresh..."
-                          terraform refresh
-                          terraform apply -auto-approve
+                  
+                  # Try to apply with auto-approve
+                  if terraform apply -auto-approve; then
+                      echo "Apply completed successfully"
+                  else
+                      echo "Apply failed, attempting to handle existing resources..."
+                      
+                      # Refresh state to sync with actual resources
+                      terraform refresh
+                      
+                      # Try to apply again
+                      if terraform apply -auto-approve; then
+                          echo "Apply completed successfully after refresh"
                       else
-                          exit 1
+                          echo "Apply still failed, attempting to import missing resources..."
+                          
+                          # Import any missing resources that might exist
+                          if aws iam get-instance-profile --instance-profile-name "terraform-atlantis-workshop-ec2-profile" >/dev/null 2>&1; then
+                              terraform import aws_iam_instance_profile.ec2_profile terraform-atlantis-workshop-ec2-profile || true
+                          fi
+                          
+                          if aws iam get-role --role-name "terraform-atlantis-workshop-ec2-role" >/dev/null 2>&1; then
+                              terraform import aws_iam_role.ec2_role terraform-atlantis-workshop-ec2-role || true
+                          fi
+                          
+                          # Final attempt to apply
+                          terraform apply -auto-approve || {
+                              echo "Final apply attempt failed. Exiting with error."
+                              exit 1
+                          }
                       fi
-                  }
+                  fi
 
             - name: Get Terraform Outputs
               working-directory: terraform
