@@ -45,7 +45,7 @@ This guide covers the setup and configuration of comprehensive monitoring and al
 resource "aws_cloudwatch_log_group" "application" {
   name              = "/aws/application/${var.environment}"
   retention_in_days = 30
-  
+
   tags = {
     Name        = "${var.environment}-application-logs"
     Environment = var.environment
@@ -55,7 +55,7 @@ resource "aws_cloudwatch_log_group" "application" {
 resource "aws_cloudwatch_log_group" "system" {
   name              = "/aws/system/${var.environment}"
   retention_in_days = 30
-  
+
   tags = {
     Name        = "${var.environment}-system-logs"
     Environment = var.environment
@@ -65,7 +65,7 @@ resource "aws_cloudwatch_log_group" "system" {
 resource "aws_cloudwatch_log_group" "security" {
   name              = "/aws/security/${var.environment}"
   retention_in_days = 90
-  
+
   tags = {
     Name        = "${var.environment}-security-logs"
     Environment = var.environment
@@ -87,15 +87,15 @@ resource "aws_cloudwatch_metric_alarm" "application_health" {
   period              = "60"
   statistic           = "Average"
   threshold           = "1"
-  
+
   dimensions = {
     LoadBalancer = aws_lb.main.arn_suffix
     TargetGroup  = aws_lb_target_group.main.arn_suffix
   }
-  
+
   alarm_description = "Application health check failed"
   alarm_actions     = [aws_sns_topic.alerts.arn]
-  
+
   tags = {
     Name        = "${var.environment}-application-health-alarm"
     Environment = var.environment
@@ -112,15 +112,15 @@ resource "aws_cloudwatch_metric_alarm" "response_time" {
   period              = "300"
   statistic           = "Average"
   threshold           = "2"
-  
+
   dimensions = {
     LoadBalancer = aws_lb.main.arn_suffix
     TargetGroup  = aws_lb_target_group.main.arn_suffix
   }
-  
+
   alarm_description = "Application response time is too high"
   alarm_actions     = [aws_sns_topic.alerts.arn]
-  
+
   tags = {
     Name        = "${var.environment}-response-time-alarm"
     Environment = var.environment
@@ -144,14 +144,14 @@ resource "aws_cloudwatch_metric_alarm" "cpu_high" {
   period              = "300"
   statistic           = "Average"
   threshold           = "80"
-  
+
   dimensions = {
     AutoScalingGroupName = aws_autoscaling_group.main.name
   }
-  
+
   alarm_description = "CPU utilization is high"
   alarm_actions     = [aws_sns_topic.alerts.arn]
-  
+
   tags = {
     Name        = "${var.environment}-cpu-high-alarm"
     Environment = var.environment
@@ -168,14 +168,14 @@ resource "aws_cloudwatch_metric_alarm" "memory_high" {
   period              = "300"
   statistic           = "Average"
   threshold           = "85"
-  
+
   dimensions = {
     AutoScalingGroupName = aws_autoscaling_group.main.name
   }
-  
+
   alarm_description = "Memory utilization is high"
   alarm_actions     = [aws_sns_topic.alerts.arn]
-  
+
   tags = {
     Name        = "${var.environment}-memory-high-alarm"
     Environment = var.environment
@@ -192,14 +192,14 @@ resource "aws_cloudwatch_metric_alarm" "disk_high" {
   period              = "300"
   statistic           = "Average"
   threshold           = "85"
-  
+
   dimensions = {
     AutoScalingGroupName = aws_autoscaling_group.main.name
   }
-  
+
   alarm_description = "Disk space utilization is high"
   alarm_actions     = [aws_sns_topic.alerts.arn]
-  
+
   tags = {
     Name        = "${var.environment}-disk-high-alarm"
     Environment = var.environment
@@ -221,14 +221,14 @@ resource "aws_cloudwatch_metric_alarm" "rds_cpu" {
   period              = "300"
   statistic           = "Average"
   threshold           = "80"
-  
+
   dimensions = {
     DBInstanceIdentifier = aws_db_instance.main.id
   }
-  
+
   alarm_description = "RDS CPU utilization is high"
   alarm_actions     = [aws_sns_topic.alerts.arn]
-  
+
   tags = {
     Name        = "${var.environment}-rds-cpu-alarm"
     Environment = var.environment
@@ -245,14 +245,14 @@ resource "aws_cloudwatch_metric_alarm" "rds_memory" {
   period              = "300"
   statistic           = "Average"
   threshold           = "1000000000"  # 1GB in bytes
-  
+
   dimensions = {
     DBInstanceIdentifier = aws_db_instance.main.id
   }
-  
+
   alarm_description = "RDS freeable memory is low"
   alarm_actions     = [aws_sns_topic.alerts.arn]
-  
+
   tags = {
     Name        = "${var.environment}-rds-memory-alarm"
     Environment = var.environment
@@ -269,14 +269,14 @@ resource "aws_cloudwatch_metric_alarm" "rds_connections" {
   period              = "300"
   statistic           = "Average"
   threshold           = "80"
-  
+
   dimensions = {
     DBInstanceIdentifier = aws_db_instance.main.id
   }
-  
+
   alarm_description = "RDS database connections are high"
   alarm_actions     = [aws_sns_topic.alerts.arn]
-  
+
   tags = {
     Name        = "${var.environment}-rds-connections-alarm"
     Environment = var.environment
@@ -298,14 +298,14 @@ resource "aws_cloudwatch_metric_alarm" "alb_requests" {
   period              = "300"
   statistic           = "Sum"
   threshold           = "1000"
-  
+
   dimensions = {
     LoadBalancer = aws_lb.main.arn_suffix
   }
-  
+
   alarm_description = "ALB request count is high"
   alarm_actions     = [aws_sns_topic.alerts.arn]
-  
+
   tags = {
     Name        = "${var.environment}-alb-requests-alarm"
     Environment = var.environment
@@ -322,14 +322,14 @@ resource "aws_cloudwatch_metric_alarm" "alb_5xx_errors" {
   period              = "300"
   statistic           = "Sum"
   threshold           = "10"
-  
+
   dimensions = {
     LoadBalancer = aws_lb.main.arn_suffix
   }
-  
+
   alarm_description = "ALB 5XX errors detected"
   alarm_actions     = [aws_sns_topic.alerts.arn]
-  
+
   tags = {
     Name        = "${var.environment}-alb-5xx-errors-alarm"
     Environment = var.environment
@@ -349,7 +349,7 @@ resource "aws_flow_log" "main" {
   log_destination = aws_cloudwatch_log_group.flow_logs.arn
   traffic_type    = "ALL"
   vpc_id          = aws_vpc.main.id
-  
+
   tags = {
     Name        = "${var.environment}-flow-logs"
     Environment = var.environment
@@ -360,7 +360,7 @@ resource "aws_flow_log" "main" {
 resource "aws_cloudwatch_log_group" "flow_logs" {
   name              = "/aws/vpc/flowlogs/${var.environment}"
   retention_in_days = 30
-  
+
   tags = {
     Name        = "${var.environment}-flow-logs"
     Environment = var.environment
@@ -370,7 +370,7 @@ resource "aws_cloudwatch_log_group" "flow_logs" {
 # Flow Logs IAM Role
 resource "aws_iam_role" "flow_log_role" {
   name = "${var.environment}-flow-log-role"
-  
+
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
@@ -389,7 +389,7 @@ resource "aws_iam_role" "flow_log_role" {
 resource "aws_iam_role_policy" "flow_log_policy" {
   name = "${var.environment}-flow-log-policy"
   role = aws_iam_role.flow_log_role.id
-  
+
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
@@ -423,10 +423,10 @@ resource "aws_cloudwatch_metric_alarm" "iam_access_denied" {
   period              = "300"
   statistic           = "Sum"
   threshold           = "1"
-  
+
   alarm_description = "IAM access denied events detected"
   alarm_actions     = [aws_sns_topic.security_alerts.arn]
-  
+
   tags = {
     Name        = "${var.environment}-iam-access-denied-alarm"
     Environment = var.environment
@@ -443,10 +443,10 @@ resource "aws_cloudwatch_metric_alarm" "iam_root_user" {
   period              = "300"
   statistic           = "Sum"
   threshold           = "1"
-  
+
   alarm_description = "Root user activity detected"
   alarm_actions     = [aws_sns_topic.security_alerts.arn]
-  
+
   tags = {
     Name        = "${var.environment}-iam-root-user-alarm"
     Environment = var.environment
@@ -463,7 +463,7 @@ resource "aws_cloudwatch_metric_alarm" "iam_root_user" {
 # Main Alerts SNS Topic
 resource "aws_sns_topic" "alerts" {
   name = "${var.environment}-alerts"
-  
+
   tags = {
     Name        = "${var.environment}-alerts-topic"
     Environment = var.environment
@@ -473,7 +473,7 @@ resource "aws_sns_topic" "alerts" {
 # Security Alerts SNS Topic
 resource "aws_sns_topic" "security_alerts" {
   name = "${var.environment}-security-alerts"
-  
+
   tags = {
     Name        = "${var.environment}-security-alerts-topic"
     Environment = var.environment
@@ -483,7 +483,7 @@ resource "aws_sns_topic" "security_alerts" {
 # Critical Alerts SNS Topic
 resource "aws_sns_topic" "critical_alerts" {
   name = "${var.environment}-critical-alerts"
-  
+
   tags = {
     Name        = "${var.environment}-critical-alerts-topic"
     Environment = var.environment
@@ -522,13 +522,13 @@ resource "aws_lambda_function" "slack_notification" {
   handler         = "index.handler"
   runtime         = "nodejs16.x"
   timeout         = 30
-  
+
   environment {
     variables = {
       SLACK_WEBHOOK_URL = var.slack_webhook_url
     }
   }
-  
+
   tags = {
     Name        = "${var.environment}-slack-notification"
     Environment = var.environment
@@ -538,7 +538,7 @@ resource "aws_lambda_function" "slack_notification" {
 # Lambda IAM Role
 resource "aws_iam_role" "lambda_role" {
   name = "${var.environment}-lambda-role"
-  
+
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
@@ -557,7 +557,7 @@ resource "aws_iam_role" "lambda_role" {
 resource "aws_iam_role_policy" "lambda_policy" {
   name = "${var.environment}-lambda-policy"
   role = aws_iam_role.lambda_role.id
-  
+
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
@@ -600,7 +600,7 @@ resource "aws_lambda_permission" "sns_invoke" {
 # Main Dashboard
 resource "aws_cloudwatch_dashboard" "main" {
   dashboard_name = "${var.environment}-dashboard"
-  
+
   dashboard_body = jsonencode({
     widgets = [
       {
@@ -609,7 +609,7 @@ resource "aws_cloudwatch_dashboard" "main" {
         y      = 0
         width  = 12
         height = 6
-        
+
         properties = {
           metrics = [
             ["AWS/EC2", "CPUUtilization", "AutoScalingGroupName", aws_autoscaling_group.main.name],
@@ -628,7 +628,7 @@ resource "aws_cloudwatch_dashboard" "main" {
         y      = 0
         width  = 12
         height = 6
-        
+
         properties = {
           metrics = [
             ["AWS/RDS", "CPUUtilization", "DBInstanceIdentifier", aws_db_instance.main.id],
@@ -647,7 +647,7 @@ resource "aws_cloudwatch_dashboard" "main" {
         y      = 6
         width  = 12
         height = 6
-        
+
         properties = {
           metrics = [
             ["AWS/ApplicationELB", "RequestCount", "LoadBalancer", aws_lb.main.arn_suffix],
@@ -666,7 +666,7 @@ resource "aws_cloudwatch_dashboard" "main" {
         y      = 6
         width  = 12
         height = 6
-        
+
         properties = {
           query   = "SOURCE '/aws/application/${var.environment}'\n| fields @timestamp, @message\n| filter @message like /ERROR/\n| sort @timestamp desc\n| limit 20"
           region  = var.aws_region
@@ -686,7 +686,7 @@ resource "aws_cloudwatch_dashboard" "main" {
 # Security Dashboard
 resource "aws_cloudwatch_dashboard" "security" {
   dashboard_name = "${var.environment}-security-dashboard"
-  
+
   dashboard_body = jsonencode({
     widgets = [
       {
@@ -695,7 +695,7 @@ resource "aws_cloudwatch_dashboard" "security" {
         y      = 0
         width  = 24
         height = 6
-        
+
         properties = {
           query   = "SOURCE '/aws/vpc/flowlogs/${var.environment}'\n| fields @timestamp, srcaddr, dstaddr, action\n| filter action == 'REJECT'\n| sort @timestamp desc\n| limit 50"
           region  = var.aws_region
@@ -709,7 +709,7 @@ resource "aws_cloudwatch_dashboard" "security" {
         y      = 6
         width  = 12
         height = 6
-        
+
         properties = {
           metrics = [
             ["AWS/IAM", "AccessDenied", "Region", var.aws_region],
@@ -727,7 +727,7 @@ resource "aws_cloudwatch_dashboard" "security" {
         y      = 6
         width  = 12
         height = 6
-        
+
         properties = {
           query   = "SOURCE '/aws/security/${var.environment}'\n| fields @timestamp, @message\n| filter @message like /FAILED/ or @message like /DENIED/\n| sort @timestamp desc\n| limit 20"
           region  = var.aws_region
@@ -749,12 +749,12 @@ resource "aws_cloudwatch_dashboard" "security" {
 # CloudWatch Log Insights Queries
 resource "aws_cloudwatch_query_definition" "error_logs" {
   name = "${var.environment}-error-logs"
-  
+
   log_group_names = [
     aws_cloudwatch_log_group.application.name,
     aws_cloudwatch_log_group.system.name
   ]
-  
+
   query_string = <<EOF
 fields @timestamp, @message
 | filter @message like /ERROR/
@@ -765,12 +765,12 @@ EOF
 
 resource "aws_cloudwatch_query_definition" "security_events" {
   name = "${var.environment}-security-events"
-  
+
   log_group_names = [
     aws_cloudwatch_log_group.security.name,
     aws_cloudwatch_log_group.flow_logs.name
   ]
-  
+
   query_string = <<EOF
 fields @timestamp, @message
 | filter @message like /FAILED/ or @message like /DENIED/ or @message like /REJECT/
@@ -788,7 +788,7 @@ EOF
 resource "aws_cloudwatch_log_group" "application" {
   name              = "/aws/application/${var.environment}"
   retention_in_days = var.log_retention_days
-  
+
   tags = {
     Name        = "${var.environment}-application-logs"
     Environment = var.environment
@@ -798,7 +798,7 @@ resource "aws_cloudwatch_log_group" "application" {
 resource "aws_cloudwatch_log_group" "system" {
   name              = "/aws/system/${var.environment}"
   retention_in_days = var.log_retention_days
-  
+
   tags = {
     Name        = "${var.environment}-system-logs"
     Environment = var.environment
@@ -808,7 +808,7 @@ resource "aws_cloudwatch_log_group" "system" {
 resource "aws_cloudwatch_log_group" "security" {
   name              = "/aws/security/${var.environment}"
   retention_in_days = 90  # Longer retention for security logs
-  
+
   tags = {
     Name        = "${var.environment}-security-logs"
     Environment = var.environment
@@ -890,27 +890,27 @@ output "security_alerts_topic_arn" {
 
 ### 1. Monitoring Best Practices
 
-- **Set Appropriate Thresholds**: Use realistic thresholds based on historical data
-- **Use Multiple Evaluation Periods**: Avoid false positives with multiple evaluation periods
-- **Implement Escalation**: Use different SNS topics for different severity levels
-- **Monitor Business Metrics**: Include application-specific metrics
-- **Regular Review**: Review and adjust alarms based on actual usage
+-   **Set Appropriate Thresholds**: Use realistic thresholds based on historical data
+-   **Use Multiple Evaluation Periods**: Avoid false positives with multiple evaluation periods
+-   **Implement Escalation**: Use different SNS topics for different severity levels
+-   **Monitor Business Metrics**: Include application-specific metrics
+-   **Regular Review**: Review and adjust alarms based on actual usage
 
 ### 2. Alerting Best Practices
 
-- **Avoid Alert Fatigue**: Don't create too many alarms
-- **Use Descriptive Names**: Make alarm names clear and descriptive
-- **Include Context**: Add descriptions to alarms
-- **Test Alerts**: Regularly test alert delivery
-- **Document Procedures**: Document response procedures for each alert
+-   **Avoid Alert Fatigue**: Don't create too many alarms
+-   **Use Descriptive Names**: Make alarm names clear and descriptive
+-   **Include Context**: Add descriptions to alarms
+-   **Test Alerts**: Regularly test alert delivery
+-   **Document Procedures**: Document response procedures for each alert
 
 ### 3. Logging Best Practices
 
-- **Structured Logging**: Use structured log formats (JSON)
-- **Include Context**: Log relevant context with each event
-- **Avoid Sensitive Data**: Never log passwords or sensitive information
-- **Use Appropriate Levels**: Use appropriate log levels (DEBUG, INFO, WARN, ERROR)
-- **Centralized Collection**: Collect logs centrally for analysis
+-   **Structured Logging**: Use structured log formats (JSON)
+-   **Include Context**: Log relevant context with each event
+-   **Avoid Sensitive Data**: Never log passwords or sensitive information
+-   **Use Appropriate Levels**: Use appropriate log levels (DEBUG, INFO, WARN, ERROR)
+-   **Centralized Collection**: Collect logs centrally for analysis
 
 ## Next Steps
 
@@ -924,8 +924,8 @@ After setting up monitoring and alerting:
 
 ## Resources
 
-- [CloudWatch Documentation](https://docs.aws.amazon.com/cloudwatch/)
-- [CloudWatch Logs](https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/)
-- [CloudWatch Alarms](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/)
-- [SNS Documentation](https://docs.aws.amazon.com/sns/)
-- [VPC Flow Logs](https://docs.aws.amazon.com/vpc/latest/userguide/flow-logs.html)
+-   [CloudWatch Documentation](https://docs.aws.amazon.com/cloudwatch/)
+-   [CloudWatch Logs](https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/)
+-   [CloudWatch Alarms](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/)
+-   [SNS Documentation](https://docs.aws.amazon.com/sns/)
+-   [VPC Flow Logs](https://docs.aws.amazon.com/vpc/latest/userguide/flow-logs.html)
