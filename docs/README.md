@@ -31,6 +31,7 @@ This comprehensive documentation suite covers all aspects of the **Environment P
 -   **[Deployment Procedures](deployment-procedures.md)** - Step-by-step deployment guide
 -   **[Testing Procedures](testing-procedures.md)** - Comprehensive testing strategies
 -   **[Rollback Procedures](rollback-procedures.md)** - Emergency rollback instructions
+-   **[Operational Procedures](operational-procedures.md)** - Day-to-day operations guide
 -   **[Maintenance Procedures](maintenance-procedures.md)** - Ongoing maintenance tasks
 
 ### 🔧 Troubleshooting & Support
