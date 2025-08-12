@@ -81,7 +81,9 @@ jobs:
 
             - name: Terraform Plan
               working-directory: terraform
-              run: terraform plan -out=tfplan | tee plan.txt
+              run: |
+                  terraform plan -out=tfplan
+                  terraform show tfplan > plan.txt
               if: github.event_name == 'pull_request'
 
             - name: Upload Terraform Plan
@@ -98,198 +100,70 @@ jobs:
                   script: |
                       const fs = require('fs');
                       const plan = fs.readFileSync('terraform/tfplan', 'base64');
+                      const planOutput = fs.readFileSync('terraform/plan.txt', 'utf8');
+                      
+                      // Simple parsing of plan output
+                      const lines = planOutput.split('\n');
+                      let toAdd = 0, toChange = 0, toDestroy = 0;
+                      let resources = [];
+                      
+                      for (const line of lines) {
+                        if (line.includes(' to add')) {
+                          toAdd = parseInt(line.match(/(\d+)/)[1]);
+                        } else if (line.includes(' to change')) {
+                          toChange = parseInt(line.match(/(\d+)/)[1]);
+                        } else if (line.includes(' to destroy')) {
+                          toDestroy = parseInt(line.match(/(\d+)/)[1]);
+                        } else if (line.includes('will be created')) {
+                          const resource = line.replace('# ', '').replace(' will be created', '');
+                          resources.push({ type: 'create', name: resource });
+                        } else if (line.includes('will be updated')) {
+                          const resource = line.replace('# ', '').replace(' will be updated', '');
+                          resources.push({ type: 'update', name: resource });
+                        } else if (line.includes('will be destroyed')) {
+                          const resource = line.replace('# ', '').replace(' will be destroyed', '');
+                          resources.push({ type: 'destroy', name: resource });
+                        }
+                      }
+                      
+                      const comment = `## Terraform Plan 📋
 
-                                             // Parse terraform plan output to get resource changes
-                       const planOutput = fs.readFileSync('terraform/plan.txt', 'utf8');
-                       
-                       // Remove ANSI color codes
-                       const cleanOutput = planOutput.replace(/\x1b\[[0-9;]*m/g, '');
-                       
-                       // Extract resource change counts
-                       const addMatch = cleanOutput.match(/(\d+) to add/);
-                       const changeMatch = cleanOutput.match(/(\d+) to change/);
-                       const destroyMatch = cleanOutput.match(/(\d+) to destroy/);
-                       const noChangesMatch = cleanOutput.match(/No changes\. Objects have not changed/);
-                       
-                       // Extract specific resource changes
-                       const resourceChanges = [];
-                       const lines = cleanOutput.split('\n');
-                       let currentResource = null;
-                       let inResourceBlock = false;
-                       
-                       for (const line of lines) {
-                         const trimmedLine = line.trim();
-                         
-                         // Match resource creation/modification/destruction
-                         const resourceMatch = trimmedLine.match(/^#\s*([^#]+)\s*will be created/);
-                         const resourceChangeMatch = trimmedLine.match(/^#\s*([^#]+)\s*will be updated/);
-                         const resourceDestroyMatch = trimmedLine.match(/^#\s*([^#]+)\s*will be destroyed/);
-                         
-                         if (resourceMatch) {
-                           currentResource = { type: 'create', name: resourceMatch[1].trim() };
-                           inResourceBlock = true;
-                         } else if (resourceChangeMatch) {
-                           currentResource = { type: 'update', name: resourceChangeMatch[1].trim() };
-                           inResourceBlock = true;
-                         } else if (resourceDestroyMatch) {
-                           currentResource = { type: 'destroy', name: resourceDestroyMatch[1].trim() };
-                           inResourceBlock = true;
-                         }
-                         
-                         // Extract key attributes for new resources (lines starting with +)
-                         if (currentResource && inResourceBlock && line.includes('+') && !line.startsWith('#')) {
-                           const attrMatch = line.match(/^\s*\+([^:]+):\s*"([^"]+)"/);
-                           if (attrMatch) {
-                             const attr = attrMatch[1].trim();
-                             const value = attrMatch[2];
-                             
-                             // Only include important attributes
-                             const importantAttrs = ['name', 'instance_type', 'ami', 'vpc_id', 'subnet_id', 'bucket', 'region', 'cidr_block', 'availability_zone', 'port', 'protocol', 'cidr_blocks', 'instancetype'];
-                             if (importantAttrs.some(importantAttr => importantAttr.toLowerCase() === attr.toLowerCase())) {
-                               if (!currentResource.attributes) currentResource.attributes = {};
-                               currentResource.attributes[attr] = value;
-                             }
-                           }
-                         }
-                         
-                         // Extract changes in existing resources (lines starting with ~)
-                         if (currentResource && inResourceBlock && line.includes('~') && !line.startsWith('#')) {
-                           // Handle tag changes specifically
-                           if (line.includes('tags') && line.includes('=')) {
-                             const tagMatch = line.match(/^\s*~([^:]+):\s*"([^"]+)"\s*->\s*"([^"]+)"/);
-                             if (tagMatch) {
-                               const attr = tagMatch[1].trim();
-                               const oldValue = tagMatch[2];
-                               const newValue = tagMatch[3];
-                               
-                               if (!currentResource.changes) currentResource.changes = {};
-                               currentResource.changes[attr] = { from: oldValue, to: newValue };
-                             }
-                           } else {
-                             // Handle other attribute changes
-                             const changeMatch = line.match(/^\s*~([^:]+):\s*"([^"]+)"\s*->\s*"([^"]+)"/);
-                             if (changeMatch) {
-                               const attr = changeMatch[1].trim();
-                               const oldValue = changeMatch[2];
-                               const newValue = changeMatch[3];
-                               
-                               if (!currentResource.changes) currentResource.changes = {};
-                               currentResource.changes[attr] = { from: oldValue, to: newValue };
-                             }
-                           }
-                         }
-                         
-                         // End of resource block (empty line or new resource starts)
-                         if (inResourceBlock && (trimmedLine === '' || trimmedLine.startsWith('#'))) {
-                           if (currentResource) {
-                             resourceChanges.push(currentResource);
-                             currentResource = null;
-                           }
-                           inResourceBlock = false;
-                         }
-                       }
-                       
-                       let planSummary = '';
-                       let changeDetails = '';
-                       let technicalDetails = '';
-                       
-                       if (noChangesMatch) {
-                         planSummary = '**✅ No Changes Detected**\n- Infrastructure is up to date';
-                         changeDetails = 'No resources will be added, modified, or destroyed.';
-                       } else {
-                         const toAdd = addMatch ? parseInt(addMatch[1]) : 0;
-                         const toChange = changeMatch ? parseInt(changeMatch[1]) : 0;
-                         const toDestroy = destroyMatch ? parseInt(destroyMatch[1]) : 0;
-                         
-                         planSummary = `**📊 Resource Changes:**\n- ➕ **${toAdd}** to add\n- 🔄 **${toChange}** to change\n- 🗑️ **${toDestroy}** to destroy`;
-                         
-                         // Build technical details
-                         const creates = resourceChanges.filter(r => r.type === 'create');
-                         const updates = resourceChanges.filter(r => r.type === 'update');
-                         const destroys = resourceChanges.filter(r => r.type === 'destroy');
-                         
-                                                    if (creates.length > 0) {
-                             technicalDetails += '\n**🆕 New Resources:**\n';
-                             creates.forEach(resource => {
-                               const resourceType = resource.name.split('.')[0];
-                               const resourceName = resource.name.split('.')[1] || resource.name;
-                               technicalDetails += `- \`${resourceType}\` (${resourceName})\n`;
-                               
-                               if (resource.attributes) {
-                                 Object.entries(resource.attributes).forEach(([attr, value]) => {
-                                   if (['name', 'instance_type', 'ami', 'vpc_id', 'subnet_id', 'bucket', 'region', 'port', 'protocol', 'cidr_blocks'].includes(attr)) {
-                                     technicalDetails += `  - ${attr}: \`${value}\`\n`;
-                                   }
-                                 });
-                               }
-                             });
-                           }
-                         
-                         if (updates.length > 0) {
-                           technicalDetails += '\n**🔄 Modified Resources:**\n';
-                           updates.forEach(resource => {
-                             const resourceType = resource.name.split('.')[0];
-                             const resourceName = resource.name.split('.')[1] || resource.name;
-                             technicalDetails += `- \`${resourceType}\` (${resourceName})\n`;
-                             
-                             if (resource.changes) {
-                               Object.entries(resource.changes).forEach(([attr, change]) => {
-                                 technicalDetails += `  - ${attr}: \`${change.from}\` → \`${change.to}\`\n`;
-                               });
-                             }
-                           });
-                         }
-                         
-                         if (destroys.length > 0) {
-                           technicalDetails += '\n**🗑️ Resources to Destroy:**\n';
-                           destroys.forEach(resource => {
-                             const resourceType = resource.name.split('.')[0];
-                             const resourceName = resource.name.split('.')[1] || resource.name;
-                             technicalDetails += `- \`${resourceType}\` (${resourceName})\n`;
-                           });
-                         }
-                       }
+                      **📊 Resource Changes:**
+                      - ➕ **${toAdd}** to add
+                      - 🔄 **${toChange}** to change  
+                      - 🗑️ **${toDestroy}** to destroy
 
-                                             const comment = `## Terraform Plan 📋
+                      **🔧 Key Resources:**
+                      ${resources.slice(0, 10).map(r => `- \`${r.name}\` (${r.type})`).join('\n')}
+                      ${resources.length > 10 ? `\n... and ${resources.length - 10} more resources` : ''}
 
-                       ${planSummary}
+                      **📋 Workflow Status:**
+                      - ✅ **terraform-plan**: Completed successfully
+                      - ⏳ **terraform-apply**: Will run when PR is merged to main
+                      - ⏳ **health-check**: Will run after apply completes
 
-                       **🔧 Technical Changes:**
-                       ${technicalDetails}
+                      **🔒 Security & Compliance:**
+                      - ✅ Policy validation passed
+                      - ✅ Cost controls enforced
+                      - ✅ Security requirements met
 
-                       **📋 Workflow Status:**
-                       - ✅ **terraform-plan**: Completed successfully
-                       - ⏳ **terraform-apply**: Will run when PR is merged to main
-                       - ⏳ **health-check**: Will run after apply completes
-                       - ⏸️ **cleanup**: Manual trigger only (for destroy operations)
+                      <details>
+                      <summary>📄 Full Plan Output</summary>
 
-                       **🔒 Security & Compliance:**
-                       - ✅ Policy validation passed
-                       - ✅ Cost controls enforced
-                       - ✅ Security requirements met
+                      \`\`\`
+                      ${planOutput}
+                      \`\`\`
 
-                       **📝 Next Steps:**
-                       1. Review the technical changes above
-                       2. Approve this PR if changes look correct
-                       3. Merge to trigger automatic apply and health check
+                      </details>
 
-                       <details>
-                       <summary>📄 Full Plan Output</summary>
+                      <details>
+                      <summary>🔧 Plan File (Base64)</summary>
 
-                       \`\`\`
-                       ${planOutput}
-                       \`\`\`
+                      \`\`\`
+                      ${plan}
+                      \`\`\`
 
-                       </details>
-
-                       <details>
-                       <summary>🔧 Plan File (Base64)</summary>
-
-                       \`\`\`
-                       ${plan}
-                       \`\`\`
-
-                       </details>`;
+                      </details>`;
 
                       github.rest.issues.createComment({
                         issue_number: context.issue.number,
@@ -328,112 +202,32 @@ jobs:
               working-directory: terraform
               run: terraform init
 
-            - name: Clean Up Orphaned Resources
+            - name: Check for Resource Conflicts
               working-directory: terraform
               run: |
-                  echo "Checking for orphaned resources that might cause conflicts..."
-
-                  # Check if there are any orphaned IAM instance profiles
-                  if aws iam get-instance-profile --instance-profile-name "terraform-atlantis-workshop-ec2-profile" >/dev/null 2>&1; then
-                      echo "Found existing IAM instance profile, checking if it's attached to any instances..."
-                      
-                      # Check if the instance profile is attached to any instances
-                      ATTACHED_INSTANCES=$(aws ec2 describe-instances --filters "Name=iam-instance-profile.arn,Values=*terraform-atlantis-workshop-ec2-profile*" --query 'Reservations[].Instances[].InstanceId' --output text 2>/dev/null)
-                      
-                      if [ -z "$ATTACHED_INSTANCES" ] || [ "$ATTACHED_INSTANCES" = "None" ]; then
-                          echo "Instance profile is not attached to any instances, it's safe to proceed"
-                      else
-                          echo "Instance profile is attached to instances: $ATTACHED_INSTANCES"
-                      fi
+                  echo "Checking for potential resource conflicts..."
+                  
+                  # Simple check for existing resources that might conflict
+                  echo "Checking for existing resources with workshop naming..."
+                  
+                  # Check for existing S3 buckets
+                  if aws s3api list-buckets --query 'Buckets[?contains(Name, `terraform-atlantis-workshop`)].Name' --output text | grep -q .; then
+                      echo "⚠️ Found existing S3 buckets with workshop naming"
                   fi
-
-            - name: Check for Existing Resources
-              working-directory: terraform
-              run: |
-                  echo "Checking for existing resources..."
-
-                  # Check if S3 bucket exists
-                  if aws s3api head-bucket --bucket "terraform-atlantis-workshop-workshop-bucket" 2>/dev/null; then
-                      echo "S3 bucket exists, importing to state..."
-                      terraform import aws_s3_bucket.workshop terraform-atlantis-workshop-workshop-bucket || true
+                  
+                  # Check for existing VPCs
+                  if aws ec2 describe-vpcs --filters "Name=tag:Name,Values=*terraform-atlantis-workshop*" --query 'Vpcs[].VpcId' --output text | grep -q vpc-; then
+                      echo "⚠️ Found existing VPCs with workshop naming"
                   fi
-
-                  # Check if CloudWatch log group exists
-                  if aws logs describe-log-groups --log-group-name-prefix "/aws/ec2/terraform-atlantis-workshop" --query 'logGroups[?logGroupName==`/aws/ec2/terraform-atlantis-workshop`]' --output text | grep -q "/aws/ec2/terraform-atlantis-workshop"; then
-                      echo "CloudWatch log group exists, importing to state..."
-                      terraform import aws_cloudwatch_log_group.application "/aws/ec2/terraform-atlantis-workshop" || true
-                  fi
-
-                  # Check if IAM role exists
-                  if aws iam get-role --role-name "terraform-atlantis-workshop-ec2-role" >/dev/null 2>&1; then
-                      echo "IAM role exists, importing to state..."
-                      terraform import aws_iam_role.ec2_role terraform-atlantis-workshop-ec2-role || true
-                  fi
-
-                  # Check if IAM instance profile exists
-                  if aws iam get-instance-profile --instance-profile-name "terraform-atlantis-workshop-ec2-profile" >/dev/null 2>&1; then
-                      echo "IAM instance profile exists, importing to state..."
-                      terraform import aws_iam_instance_profile.ec2_profile terraform-atlantis-workshop-ec2-profile || true
-                  fi
-
-                  # Check if VPC exists
-                  VPC_ID=$(aws ec2 describe-vpcs --filters "Name=tag:Name,Values=terraform-atlantis-workshop-vpc" --query 'Vpcs[0].VpcId' --output text 2>/dev/null)
-                  if [ "$VPC_ID" != "None" ] && [ "$VPC_ID" != "" ]; then
-                      echo "VPC exists, importing to state..."
-                      terraform import aws_vpc.main "$VPC_ID" || true
-                  fi
-
-                  # Check if security groups exist
-                  SG_ID=$(aws ec2 describe-security-groups --filters "Name=group-name,Values=terraform-atlantis-workshop-web-sg" --query 'SecurityGroups[0].GroupId' --output text 2>/dev/null)
-                  if [ "$SG_ID" != "None" ] && [ "$SG_ID" != "" ]; then
-                      echo "Security group exists, importing to state..."
-                      terraform import aws_security_group.web "$SG_ID" || true
-                  fi
-
-                  # Check if EC2 instances exist
-                  INSTANCE_ID=$(aws ec2 describe-instances --filters "Name=tag:Name,Values=terraform-atlantis-workshop-web-server" "Name=instance-state-name,Values=running" --query 'Reservations[0].Instances[0].InstanceId' --output text 2>/dev/null)
-                  if [ "$INSTANCE_ID" != "None" ] && [ "$INSTANCE_ID" != "" ]; then
-                      echo "EC2 instance exists, importing to state..."
-                      terraform import aws_instance.web "$INSTANCE_ID" || true
-                  fi
+                  
+                  echo "Proceeding with deployment..."
 
             - name: Terraform Plan and Apply
               working-directory: terraform
               run: |
                   echo "Planning and applying changes..."
                   terraform plan -out=tfplan
-
-                  # Try to apply with auto-approve
-                  if terraform apply -auto-approve; then
-                      echo "Apply completed successfully"
-                  else
-                      echo "Apply failed, attempting to handle existing resources..."
-                      
-                      # Refresh state to sync with actual resources
-                      terraform refresh
-                      
-                      # Try to apply again
-                      if terraform apply -auto-approve; then
-                          echo "Apply completed successfully after refresh"
-                      else
-                          echo "Apply still failed, attempting to import missing resources..."
-                          
-                          # Import any missing resources that might exist
-                          if aws iam get-instance-profile --instance-profile-name "terraform-atlantis-workshop-ec2-profile" >/dev/null 2>&1; then
-                              terraform import aws_iam_instance_profile.ec2_profile terraform-atlantis-workshop-ec2-profile || true
-                          fi
-                          
-                          if aws iam get-role --role-name "terraform-atlantis-workshop-ec2-role" >/dev/null 2>&1; then
-                              terraform import aws_iam_role.ec2_role terraform-atlantis-workshop-ec2-role || true
-                          fi
-                          
-                          # Final attempt to apply
-                          terraform apply -auto-approve || {
-                              echo "Final apply attempt failed. Exiting with error."
-                              exit 1
-                          }
-                      fi
-                  fi
+                  terraform apply tfplan
 
             - name: Get Terraform Outputs
               working-directory: terraform
@@ -614,79 +408,30 @@ jobs:
         name: Failure Notification
         runs-on: ubuntu-latest
         if: failure()
-        needs: [terraform-plan, terraform-apply, health-check]
         permissions:
             contents: read
             pull-requests: write
-            actions: read
 
         steps:
             - name: Comment on Failure
               uses: actions/github-script@v7
               with:
                   script: |
-                      // Get failed jobs from the workflow context
-                      const failedJobs = ['terraform-plan', 'terraform-apply', 'health-check'].filter(job => 
-                        '${{ needs.terraform-plan.result }}' === 'failure' || 
-                        '${{ needs.terraform-apply.result }}' === 'failure' || 
-                        '${{ needs.health-check.result }}' === 'failure'
-                      );
-                      
-                      let specificGuidance = '';
-                      
-                      if (failedJobs.includes('terraform-plan')) {
-                        specificGuidance += `
-                        **🔧 Specific Fixes for terraform-plan:**
-                        
-                        **If Format Check Failed:**
-                        \`\`\`bash
-                        # Run locally to fix formatting
-                        terraform fmt terraform/
-                        
-                        # Then commit and push
-                        git add .
-                        git commit -m "fix: Format Terraform files"
-                        git push
-                        \`\`\`
-                        
-                        **If Validation Failed:**
-                        \`\`\`bash
-                        # Check syntax locally
-                        terraform validate
-                        
-                        # Common issues:
-                        # - Missing provider configuration
-                        # - Invalid resource references
-                        # - Syntax errors in .tf files
-                        \`\`\`
-                        
-                        **If Plan Failed:**
-                        - Check AWS credentials and permissions
-                        - Verify resource naming doesn't conflict
-                        - Review error messages in logs
-                        `;
-                      }
-                      
                       const comment = `## ❌ Workflow Failed
 
                       **🚨 One or more jobs have failed**
 
-                      **📋 Failed Jobs:**
-                      ${failedJobs.map(job => `- ❌ **${job}**: Failed`).join('\n')}
-
                       **🔧 Quick Fixes:**
-                      ${specificGuidance}
-
-                      **🛠️ General Troubleshooting:**
                       1. **Format Issues**: Run \`terraform fmt terraform/\` locally
                       2. **Validation Issues**: Check syntax with \`terraform validate\`
                       3. **Resource Conflicts**: Update resource names or CIDR ranges
                       4. **AWS Limits**: Check for service limits or existing resources
 
-                      **📞 Support Resources:**
-                      - [Workshop Documentation](https://github.com/${{ github.repository }}/blob/main/docs/)
-                      - [Troubleshooting Guide](https://github.com/${{ github.repository }}/blob/main/docs/workshop-guide/09-TROUBLESHOOTING.md)
-                      - [Terraform Best Practices](https://www.terraform.io/docs/cloud/guides/recommended-practices/index.html)
+                      **🛠️ General Troubleshooting:**
+                      - Check the logs above for specific error messages
+                      - Verify AWS credentials and permissions
+                      - Ensure resource naming doesn't conflict
+                      - Review Terraform configuration syntax
 
                       **🔄 Next Steps:**
                       1. Fix the issues identified above
