@@ -58,7 +58,7 @@ resource "aws_vpc" "main" {
 
 # Internet Gateway - Create only if none exists
 resource "aws_internet_gateway" "main" {
-  count = length(data.aws_internet_gateways.existing.ids) == 0 ? 1 : 0
+  count  = length(data.aws_internet_gateways.existing.ids) == 0 ? 1 : 0
   vpc_id = aws_vpc.main.id
 
   tags = {
