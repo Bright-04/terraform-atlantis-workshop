@@ -132,6 +132,14 @@ resource "aws_security_group" "web" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
+  ingress {
+    description = "Database Port"
+    from_port   = 3306
+    to_port     = 3306
+    protocol    = "tcp"
+    cidr_blocks = ["10.0.0.0/16"]
+  }
+
   egress {
     from_port   = 0
     to_port     = 0
@@ -171,11 +179,13 @@ resource "aws_instance" "web" {
     Environment  = var.environment
     Project      = var.project_name
     Owner        = "workshop-participant"
-    TestTag      = "aws-production-deployment"
+    TestTag      = "enhanced-comments-test"
     Timestamp    = formatdate("YYYY-MM-DD-hhmm", timestamp())
     CostCenter   = "production"
     Backup       = "daily"
     InstanceType = var.instance_type
+    Version      = "2.0"
+    LastModified = formatdate("YYYY-MM-DD", timestamp())
   }
 }
 

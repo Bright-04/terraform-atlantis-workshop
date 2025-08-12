@@ -55,3 +55,4 @@ variable "s3_bucket_suffix" {
 # Testing enhanced technical comments - changed instance_type from t3.micro to t3.small
 # Testing enhanced technical comments - changed environment from workshop to production
 # Testing enhanced technical comments - changed project_name to v2 for PR testing
+# Testing enhanced technical comments - added database port and new tags for comprehensive testing
