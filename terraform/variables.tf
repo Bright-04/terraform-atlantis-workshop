@@ -57,3 +57,4 @@ variable "s3_bucket_suffix" {
 # Testing enhanced technical comments - reverted project_name to avoid resource conflicts
 # Testing enhanced technical comments - changed instance_type from t3.small to t3.medium for workflow testing
 # Testing enhanced technical comments - fixed region to ap-southeast-1 to resolve S3 bucket creation issues
+# Testing enhanced technical comments - added Redis port, new S3 bucket, and enhanced tags for workflow testing
