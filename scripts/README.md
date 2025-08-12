@@ -6,7 +6,7 @@ This directory contains all the PowerShell scripts for the Terraform Atlantis Wo
 
 ```
 scripts/
-├── 00-complete-workflow.ps1          # Master workflow script (orchestrates all others)
+├── 00-setup-env.ps1                  # Environment setup and .env generation
 ├── 01-validate-environment.ps1       # Environment validation
 ├── 02-setup-github-actions.ps1       # GitHub Actions setup
 ├── 03-deploy-infrastructure.ps1      # Infrastructure deployment
@@ -14,7 +14,7 @@ scripts/
 ├── 05-cost-monitoring.ps1            # Cost monitoring
 ├── 06-rollback-procedures.ps1        # Emergency rollback
 ├── 07-cleanup-infrastructure.ps1     # Infrastructure cleanup
-├── rollback-original.ps1             # Original rollback script (reference)
+├── 08-complete-workflow.ps1          # Master workflow script (orchestrates all others)
 └── README.md                         # This file
 ```
 
@@ -24,10 +24,10 @@ scripts/
 
 ```powershell
 # Run the complete workshop workflow
-.\scripts\00-complete-workflow.ps1
+.\scripts\08-complete-workflow.ps1
 
 # Run with custom parameters
-.\scripts\00-complete-workflow.ps1 -SkipGitHubSetup -AutoConfirm
+.\scripts\08-complete-workflow.ps1 -SkipGitHubSetup -AutoConfirm
 ```
 
 ### Option 2: Run Individual Scripts
@@ -51,7 +51,30 @@ scripts/
 
 ## 📋 Script Details
 
-### 00-complete-workflow.ps1
+### 00-setup-env.ps1
+
+**Purpose**: Automatically sets up the environment and generates the .env file with proper configuration.
+
+**Features**:
+
+-   Auto-detects existing AWS credentials and Git configuration
+-   Interactive mode for entering new credentials securely
+-   Validates AWS credentials before creating .env
+-   Auto-generates complete .env file with all required variables
+-   Environment validation for all required tools
+
+**Parameters**:
+
+-   `-Force`: Overwrite existing .env file
+-   `-Interactive`: Enter credentials interactively
+
+**Usage**:
+
+```powershell
+.\scripts\00-setup-env.ps1 -Interactive
+```
+
+### 08-complete-workflow.ps1
 
 **Purpose**: Master script that orchestrates the execution of all other scripts in the correct order.
 
@@ -68,7 +91,7 @@ scripts/
 **Usage**:
 
 ```powershell
-.\scripts\00-complete-workflow.ps1 -AutoConfirm
+.\scripts\08-complete-workflow.ps1 -AutoConfirm
 ```
 
 ### 01-validate-environment.ps1

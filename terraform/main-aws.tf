@@ -438,7 +438,10 @@ resource "aws_instance" "web" {
   }))
 
   tags = {
-    Name = "${var.project_name}-web-server"
+    Name        = "${var.project_name}-web-server"
+    Project     = var.project_name
+    Environment = var.environment
+    CostCenter  = "production"
   }
 }
 
@@ -467,26 +470,11 @@ resource "aws_instance" "test_violation" {
 
   tags = {
     Name        = "test-violation-instance"
+    Project     = var.project_name
     CostCenter  = "workshop-training"
     Environment = "test"
   }
 }
 
-# Compliance validation resources
-resource "null_resource" "instance_type_validation" {
-  triggers = {
-    instances = "policy_test:${aws_instance.policy_test.instance_type},test_violation:${aws_instance.test_violation.instance_type},web:${aws_instance.web.instance_type}"
-  }
-}
-
-resource "null_resource" "required_tags_validation" {
-  triggers = {
-    instances = "policy_test:${aws_instance.policy_test.instance_type},test_violation:${aws_instance.test_violation.instance_type},web:${aws_instance.web.instance_type}"
-  }
-}
-
-resource "null_resource" "s3_naming_validation" {
-  triggers = {
-    buckets = "${aws_s3_bucket.workshop.bucket},${aws_s3_bucket.application_logs.bucket},${aws_s3_bucket.encrypted_test.bucket},${aws_s3_bucket.test_violation.bucket}"
-  }
-}
+# Compliance validation resources are now defined in compliance-validation.tf
+# This ensures proper separation of concerns and maintainability
