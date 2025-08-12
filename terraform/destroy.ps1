@@ -13,7 +13,7 @@ if ($confirmation -eq 'destroy') {
     
     if ($LASTEXITCODE -eq 0) {
         Write-Host "✅ Infrastructure destroyed successfully!" -ForegroundColor Green
-        Write-Host "💰 Remember to check AWS console for any remaining resources" -ForegroundColor Yellow
+        Write-Host "Remember to check AWS console for any remaining resources" -ForegroundColor Yellow
     } else {
         Write-Host "❌ Terraform destroy failed!" -ForegroundColor Red
         Write-Host "🔧 You may need to manually clean up some resources" -ForegroundColor Yellow
