@@ -123,6 +123,10 @@ resource "aws_security_group" "web" {
   description = "Security group for web servers"
   vpc_id      = aws_vpc.main.id
 
+  timeouts {
+    delete = "10m"
+  }
+
   ingress {
     description = "HTTP"
     from_port   = 80
@@ -307,6 +311,10 @@ resource "aws_security_group" "policy_test" {
   description = "Security group with restricted access for compliance"
   vpc_id      = aws_vpc.main.id
 
+  timeouts {
+    delete = "10m"
+  }
+
   ingress {
     description = "SSH access only"
     from_port   = 22
@@ -486,6 +494,10 @@ resource "aws_security_group" "rds" {
   description = "Security group for RDS database"
   vpc_id      = aws_vpc.main.id
 
+  timeouts {
+    delete = "10m"
+  }
+
   ingress {
     description     = "PostgreSQL from web servers"
     from_port       = 5432
@@ -516,6 +528,10 @@ resource "aws_db_instance" "main" {
   engine         = "postgres"
   engine_version = var.db_engine_version
   instance_class = var.db_instance_class
+
+  timeouts {
+    delete = "30m"
+  }
 
   allocated_storage     = var.db_allocated_storage
   max_allocated_storage = 100
