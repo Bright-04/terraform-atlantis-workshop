@@ -1,7 +1,7 @@
-# Terraform configuration for AWS Production Deployment
-# This file uses real AWS infrastructure instead of LocalStack
+# Terraform configuration for AWS Workshop - Minimal Version
+# Focused on core workshop components without RDS and CloudFront
 
-# AWS Provider configuration for Production
+# AWS Provider configuration
 provider "aws" {
   region = var.region
 
@@ -16,21 +16,12 @@ provider "aws" {
   }
 }
 
-# Data source for availability zones (AWS)
+# Data source for availability zones
 data "aws_availability_zones" "available" {
   state = "available"
 }
 
-# Data source for existing internet gateway to avoid limit exceeded
-data "aws_internet_gateway" "existing" {
-  count = 0 # Set to 0 to avoid the error, we'll create a new one
-  filter {
-    name   = "attachment.vpc-id"
-    values = [aws_vpc.main.id]
-  }
-}
-
-# Data source for Amazon Linux 2 AMI (AWS)
+# Data source for Amazon Linux 2 AMI
 data "aws_ami" "amazon_linux" {
   most_recent = true
   owners      = ["amazon"]
@@ -46,6 +37,15 @@ data "aws_ami" "amazon_linux" {
   }
 }
 
+# Random string for unique resource names
+resource "random_string" "bucket_suffix" {
+  length  = 8
+  lower   = true
+  numeric = true
+  special = false
+  upper   = false
+}
+
 # VPC
 resource "aws_vpc" "main" {
   cidr_block           = var.vpc_cidr
@@ -57,19 +57,13 @@ resource "aws_vpc" "main" {
   }
 }
 
-# Internet Gateway - Create only if none exists
+# Internet Gateway
 resource "aws_internet_gateway" "main" {
-  count  = length(data.aws_internet_gateway.existing) == 0 ? 1 : 0
   vpc_id = aws_vpc.main.id
 
   tags = {
     Name = "${var.project_name}-igw"
   }
-}
-
-# Use existing internet gateway if available
-locals {
-  internet_gateway_id = length(data.aws_internet_gateway.existing) > 0 ? data.aws_internet_gateway.existing[0].id : aws_internet_gateway.main[0].id
 }
 
 # Public Subnet
@@ -103,7 +97,7 @@ resource "aws_route_table" "public" {
 
   route {
     cidr_block = "0.0.0.0/0"
-    gateway_id = local.internet_gateway_id
+    gateway_id = aws_internet_gateway.main.id
   }
 
   tags = {
@@ -151,22 +145,6 @@ resource "aws_security_group" "web" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  ingress {
-    description = "Custom Application Port"
-    from_port   = 8080
-    to_port     = 8080
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    description = "Redis Cache Port"
-    from_port   = 6379
-    to_port     = 6379
-    protocol    = "tcp"
-    cidr_blocks = ["10.0.0.0/16"]
-  }
-
   egress {
     from_port   = 0
     to_port     = 0
@@ -179,133 +157,7 @@ resource "aws_security_group" "web" {
   }
 }
 
-# EC2 Instance
-resource "aws_instance" "web" {
-  ami                    = data.aws_ami.amazon_linux.id
-  instance_type          = var.instance_type
-  subnet_id              = aws_subnet.public.id
-  vpc_security_group_ids = [aws_security_group.web.id]
-  key_name               = var.key_pair_name != "" ? var.key_pair_name : null
-  iam_instance_profile   = aws_iam_instance_profile.ec2_profile.name # Fixed: Added IAM profile
-
-  user_data = base64encode(<<-EOF
-    #!/bin/bash
-    yum update -y
-    yum install -y httpd
-    systemctl start httpd
-    systemctl enable httpd
-    echo "<h1>Hello from ${var.project_name} on AWS!</h1>" > /var/www/html/index.html
-    echo "<p>This instance was created with Terraform on AWS Production.</p>" >> /var/www/html/index.html
-    echo "<p>Instance ID: $(curl -s http://169.254.169.254/latest/meta-data/instance-id)</p>" >> /var/www/html/index.html
-    echo "<p>Availability Zone: $(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone)</p>" >> /var/www/html/index.html
-  EOF
-  )
-
-  tags = {
-    Name         = "${var.project_name}-web-server"
-    Environment  = var.environment
-    Project      = var.project_name
-    Owner        = "workshop-participant"
-    TestTag      = "workflow-enhancement-test"
-    Timestamp    = formatdate("YYYY-MM-DD-hhmm", timestamp())
-    CostCenter   = "production"
-    Backup       = "daily"
-    InstanceType = var.instance_type
-    WorkflowTest = "enhanced-comments"
-    LastModified = formatdate("YYYY-MM-DD", timestamp())
-  }
-}
-
-# S3 Bucket for production data
-resource "aws_s3_bucket" "workshop" {
-  bucket = "${var.project_name}-${var.s3_bucket_suffix}-${random_string.bucket_suffix.result}"
-
-  tags = {
-    Name       = "${var.project_name}-${var.s3_bucket_suffix}"
-    CostCenter = "production"
-  }
-}
-
-# S3 Bucket versioning
-resource "aws_s3_bucket_versioning" "workshop" {
-  bucket = aws_s3_bucket.workshop.id
-  versioning_configuration {
-    status = "Enabled"
-  }
-}
-
-# S3 Bucket encryption
-resource "aws_s3_bucket_server_side_encryption_configuration" "workshop" {
-  bucket = aws_s3_bucket.workshop.id
-
-  rule {
-    apply_server_side_encryption_by_default {
-      sse_algorithm = "AES256"
-    }
-  }
-}
-
-# S3 Bucket public access block
-resource "aws_s3_bucket_public_access_block" "workshop" {
-  bucket = aws_s3_bucket.workshop.id
-
-  block_public_acls       = true
-  block_public_policy     = true
-  ignore_public_acls      = true
-  restrict_public_buckets = true
-}
-
-# S3 Bucket for application logs
-resource "aws_s3_bucket" "application_logs" {
-  bucket = "${var.project_name}-application-logs-${random_string.bucket_suffix.result}"
-
-  tags = {
-    Name        = "${var.project_name}-application-logs"
-    Environment = var.environment
-    Project     = var.project_name
-    CostCenter  = "production"
-    Purpose     = "application-logs"
-  }
-}
-
-# S3 Bucket encryption for application logs
-resource "aws_s3_bucket_server_side_encryption_configuration" "application_logs" {
-  bucket = aws_s3_bucket.application_logs.id
-
-  rule {
-    apply_server_side_encryption_by_default {
-      sse_algorithm = "AES256"
-    }
-  }
-}
-
-# S3 Bucket public access block for application logs
-resource "aws_s3_bucket_public_access_block" "application_logs" {
-  bucket = aws_s3_bucket.application_logs.id
-
-  block_public_acls       = true
-  block_public_policy     = true
-  ignore_public_acls      = true
-  restrict_public_buckets = true
-}
-
-# Test EC2 instance with policy compliance
-resource "aws_instance" "policy_test" {
-  ami                    = data.aws_ami.amazon_linux.id
-  instance_type          = "t3.small" # Compliant instance type
-  subnet_id              = aws_subnet.public.id
-  vpc_security_group_ids = [aws_security_group.policy_test.id]
-
-  tags = {
-    Name        = "test-instance-compliant"
-    Environment = var.environment
-    Project     = var.project_name
-    CostCenter  = "production"
-    Backup      = "daily"
-  }
-}
-
-# Security group with restricted access
+# Security group with restricted access for compliance testing
 resource "aws_security_group" "policy_test" {
   name        = "${var.project_name}-policy-test-sg"
   description = "Security group with restricted access for compliance"
@@ -332,70 +184,35 @@ resource "aws_security_group" "policy_test" {
 
   tags = {
     Name        = "policy-test-sg"
-    Environment = var.environment
-    Project     = var.project_name
     CostCenter  = "production"
+    Environment = "workshop"
   }
 }
 
-# S3 bucket with encryption - compliant configuration
-resource "aws_s3_bucket" "encrypted_test" {
-  bucket = "terraform-atlantis-workshop-encrypted-${random_string.bucket_suffix.result}"
+# Security group with policy violations for testing
+resource "aws_security_group" "test_violation" {
+  name_prefix = "test-violation-sg"
+  description = "Security group with policy violations"
+  vpc_id      = aws_vpc.main.id
+
+  ingress {
+    description = "SSH access"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["10.0.0.0/16"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
 
   tags = {
-    Name        = "encrypted-test-bucket"
-    Environment = var.environment
-    Project     = var.project_name
-    CostCenter  = "production"
-  }
-}
-
-# S3 Bucket encryption for test bucket
-resource "aws_s3_bucket_server_side_encryption_configuration" "encrypted_test" {
-  bucket = aws_s3_bucket.encrypted_test.id
-
-  rule {
-    apply_server_side_encryption_by_default {
-      sse_algorithm = "AES256"
-    }
-  }
-}
-
-# S3 Bucket public access block for test bucket
-resource "aws_s3_bucket_public_access_block" "encrypted_test" {
-  bucket = aws_s3_bucket.encrypted_test.id
-
-  block_public_acls       = true
-  block_public_policy     = true
-  ignore_public_acls      = true
-  restrict_public_buckets = true
-}
-
-# S3 Bucket versioning for encrypted test bucket
-resource "aws_s3_bucket_versioning" "encrypted_test" {
-  bucket = aws_s3_bucket.encrypted_test.id
-  versioning_configuration {
-    status = "Enabled"
-  }
-}
-
-# Random string for bucket suffix
-resource "random_string" "bucket_suffix" {
-  length  = 8
-  special = false
-  upper   = false
-}
-
-# CloudWatch Log Group for application logs
-resource "aws_cloudwatch_log_group" "application" {
-  name              = "/aws/ec2/${var.project_name}-${random_string.bucket_suffix.result}"
-  retention_in_days = 7
-
-  tags = {
-    Name        = "${var.project_name}-application-logs"
-    Environment = var.environment
-    Project     = var.project_name
-    CostCenter  = "production"
+    CostCenter  = "workshop-training"
+    Environment = "test"
   }
 }
 
@@ -415,13 +232,36 @@ resource "aws_iam_role" "ec2_role" {
       }
     ]
   })
+}
 
-  tags = {
-    Name        = "${var.project_name}-ec2-role"
-    Environment = var.environment
-    Project     = var.project_name
-    CostCenter  = "production"
-  }
+# IAM Policy for S3 access
+resource "aws_iam_policy" "s3_access" {
+  name        = "${var.project_name}-s3-access-policy"
+  description = "Policy for S3 bucket access"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "s3:GetObject",
+          "s3:PutObject",
+          "s3:ListBucket"
+        ]
+        Resource = [
+          aws_s3_bucket.workshop.arn,
+          "${aws_s3_bucket.workshop.arn}/*"
+        ]
+      }
+    ]
+  })
+}
+
+# Attach policy to role
+resource "aws_iam_role_policy_attachment" "s3_access" {
+  role       = aws_iam_role.ec2_role.name
+  policy_arn = aws_iam_policy.s3_access.arn
 }
 
 # IAM Instance Profile
@@ -430,136 +270,223 @@ resource "aws_iam_instance_profile" "ec2_profile" {
   role = aws_iam_role.ec2_role.name
 }
 
-# IAM Policy for CloudWatch Logs
-resource "aws_iam_role_policy" "cloudwatch_logs" {
-  name = "${var.project_name}-cloudwatch-logs"
-  role = aws_iam_role.ec2_role.id
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Action = [
-          "logs:CreateLogGroup",
-          "logs:CreateLogStream",
-          "logs:PutLogEvents",
-          "logs:DescribeLogStreams"
-        ]
-        Resource = ["*"]
-      }
-    ]
-  })
-}
-
-# RDS Database Subnet Group
-resource "aws_db_subnet_group" "main" {
-  name       = "${var.project_name}-db-subnet-group-${random_string.bucket_suffix.result}"
-  subnet_ids = [aws_subnet.private.id, aws_subnet.public.id]
+# CloudWatch Log Group for application logs
+resource "aws_cloudwatch_log_group" "application" {
+  name              = "/aws/ec2/${var.project_name}-${random_string.bucket_suffix.result}"
+  retention_in_days = 7
 
   tags = {
-    Name        = "${var.project_name}-db-subnet-group"
-    Environment = var.environment
-    Project     = var.project_name
-    CostCenter  = "production"
+    Name = "${var.project_name}-application-logs"
   }
 }
 
-# RDS Parameter Group
-resource "aws_db_parameter_group" "main" {
-  family = "postgres14"
-  name   = "${var.project_name}-db-params-${random_string.bucket_suffix.result}"
-
-  parameter {
-    name  = "log_connections"
-    value = "1"
-  }
-
-  parameter {
-    name  = "log_disconnections"
-    value = "1"
-  }
+# Main S3 Bucket for workshop
+resource "aws_s3_bucket" "workshop" {
+  bucket = "${var.project_name}-workshop-${random_string.bucket_suffix.result}"
 
   tags = {
-    Name        = "${var.project_name}-db-params"
-    Environment = var.environment
-    Project     = var.project_name
-    CostCenter  = "production"
+    Name       = "${var.project_name}-workshop-bucket"
+    CostCenter = "production"
   }
 }
 
-# Security Group for RDS
-resource "aws_security_group" "rds" {
-  name        = "${var.project_name}-rds-db-sg"
-  description = "Security group for RDS database"
-  vpc_id      = aws_vpc.main.id
-
-  timeouts {
-    delete = "10m"
-  }
-
-  ingress {
-    description     = "PostgreSQL from web servers"
-    from_port       = 5432
-    to_port         = 5432
-    protocol        = "tcp"
-    security_groups = [aws_security_group.web.id]
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+# S3 Bucket for application logs
+resource "aws_s3_bucket" "application_logs" {
+  bucket = "${var.project_name}-application-logs-${random_string.bucket_suffix.result}"
 
   tags = {
-    Name        = "${var.project_name}-rds-sg"
-    Environment = var.environment
-    Project     = var.project_name
+    Name        = "${var.project_name}-application-logs"
     CostCenter  = "production"
+    Environment = "workshop"
+    Purpose     = "application-logs"
   }
 }
 
-# RDS Instance
-resource "aws_db_instance" "main" {
-  identifier = "${var.project_name}-db-${random_string.bucket_suffix.result}"
-
-  engine         = "postgres"
-  engine_version = var.db_engine_version
-  instance_class = var.db_instance_class
-
-  timeouts {
-    delete = "30m"
-  }
-
-  allocated_storage     = var.db_allocated_storage
-  max_allocated_storage = 100
-  storage_type          = "gp2"
-  storage_encrypted     = true
-
-  db_name  = var.db_name
-  username = var.db_username
-  password = var.db_password
-
-  vpc_security_group_ids = [aws_security_group.rds.id]
-  db_subnet_group_name   = aws_db_subnet_group.main.name
-  parameter_group_name   = aws_db_parameter_group.main.name
-
-  backup_retention_period = 7
-  backup_window           = "03:00-04:00"
-  maintenance_window      = "sun:04:00-sun:05:00"
-
-  skip_final_snapshot = true
-  deletion_protection = false
+# S3 Bucket for encrypted test
+resource "aws_s3_bucket" "encrypted_test" {
+  bucket = "${var.project_name}-encrypted-test-${random_string.bucket_suffix.result}"
 
   tags = {
-    Name        = "${var.project_name}-db"
-    Environment = var.environment
-    Project     = var.project_name
+    Name        = "encrypted-test-bucket"
     CostCenter  = "production"
-    Backup      = "daily"
-    Engine      = "postgres"
-    Version     = var.db_engine_version
+    Environment = "workshop"
+  }
+}
+
+# S3 Bucket for test violations
+resource "aws_s3_bucket" "test_violation" {
+  bucket = "${var.project_name}-test-violation-${random_string.bucket_suffix.result}"
+
+  tags = {
+    CostCenter  = "workshop-training"
+    Environment = "test"
+  }
+}
+
+# S3 Bucket Public Access Block for all buckets
+resource "aws_s3_bucket_public_access_block" "workshop" {
+  bucket = aws_s3_bucket.workshop.id
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
+resource "aws_s3_bucket_public_access_block" "application_logs" {
+  bucket = aws_s3_bucket.application_logs.id
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
+resource "aws_s3_bucket_public_access_block" "encrypted_test" {
+  bucket = aws_s3_bucket.encrypted_test.id
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
+resource "aws_s3_bucket_public_access_block" "test_violation" {
+  bucket = aws_s3_bucket.test_violation.id
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
+# S3 Bucket Server Side Encryption for all buckets
+resource "aws_s3_bucket_server_side_encryption_configuration" "workshop" {
+  bucket = aws_s3_bucket.workshop.id
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
+  }
+}
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "application_logs" {
+  bucket = aws_s3_bucket.application_logs.id
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
+  }
+}
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "encrypted_test" {
+  bucket = aws_s3_bucket.encrypted_test.id
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
+  }
+}
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "test_violation" {
+  bucket = aws_s3_bucket.test_violation.id
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
+  }
+}
+
+# S3 Bucket Versioning for compliance
+resource "aws_s3_bucket_versioning" "workshop" {
+  bucket = aws_s3_bucket.workshop.id
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
+resource "aws_s3_bucket_versioning" "encrypted_test" {
+  bucket = aws_s3_bucket.encrypted_test.id
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
+resource "aws_s3_bucket_versioning" "test_violation" {
+  bucket = aws_s3_bucket.test_violation.id
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
+# EC2 Instance - Web Server
+resource "aws_instance" "web" {
+  ami                    = data.aws_ami.amazon_linux.id
+  instance_type          = var.instance_type
+  key_name               = var.key_pair_name
+  vpc_security_group_ids = [aws_security_group.web.id]
+  subnet_id              = aws_subnet.public.id
+  iam_instance_profile   = aws_iam_instance_profile.ec2_profile.name
+
+  user_data = base64encode(templatefile("${path.module}/user_data.sh", {
+    project_name = var.project_name
+    bucket_name  = aws_s3_bucket.workshop.bucket
+  }))
+
+  tags = {
+    Name = "${var.project_name}-web-server"
+  }
+}
+
+# EC2 Instance - Policy Test
+resource "aws_instance" "policy_test" {
+  ami                    = data.aws_ami.amazon_linux.id
+  instance_type          = "t3.small"
+  key_name               = var.key_pair_name
+  vpc_security_group_ids = [aws_security_group.policy_test.id]
+  subnet_id              = aws_subnet.private.id
+
+  tags = {
+    Name        = "policy-test-instance"
+    CostCenter  = "production"
+    Environment = "workshop"
+  }
+}
+
+# EC2 Instance - Test Violation
+resource "aws_instance" "test_violation" {
+  ami                    = data.aws_ami.amazon_linux.id
+  instance_type          = "t3.micro"
+  key_name               = var.key_pair_name
+  vpc_security_group_ids = [aws_security_group.test_violation.id]
+  subnet_id              = aws_subnet.public.id
+
+  tags = {
+    Name        = "test-violation-instance"
+    CostCenter  = "workshop-training"
+    Environment = "test"
+  }
+}
+
+# Compliance validation resources
+resource "null_resource" "instance_type_validation" {
+  triggers = {
+    instances = "policy_test:${aws_instance.policy_test.instance_type},test_violation:${aws_instance.test_violation.instance_type},web:${aws_instance.web.instance_type}"
+  }
+}
+
+resource "null_resource" "required_tags_validation" {
+  triggers = {
+    instances = "policy_test:${aws_instance.policy_test.instance_type},test_violation:${aws_instance.test_violation.instance_type},web:${aws_instance.web.instance_type}"
+  }
+}
+
+resource "null_resource" "s3_naming_validation" {
+  triggers = {
+    buckets = "${aws_s3_bucket.workshop.bucket},${aws_s3_bucket.application_logs.bucket},${aws_s3_bucket.encrypted_test.bucket},${aws_s3_bucket.test_violation.bucket}"
   }
 }
