@@ -300,12 +300,44 @@ jobs:
               working-directory: terraform
               run: terraform init
 
+            - name: Check for Existing Resources
+              working-directory: terraform
+              run: |
+                  echo "Checking for existing resources..."
+                  # Check if S3 bucket exists
+                  if aws s3api head-bucket --bucket "terraform-atlantis-workshop-workshop-bucket" 2>/dev/null; then
+                      echo "S3 bucket exists, importing to state..."
+                      terraform import aws_s3_bucket.workshop terraform-atlantis-workshop-workshop-bucket || true
+                  fi
+                  
+                  # Check if CloudWatch log group exists
+                  if aws logs describe-log-groups --log-group-name-prefix "/aws/ec2/terraform-atlantis-workshop" --query 'logGroups[?logGroupName==`/aws/ec2/terraform-atlantis-workshop`]' --output text | grep -q "/aws/ec2/terraform-atlantis-workshop"; then
+                      echo "CloudWatch log group exists, importing to state..."
+                      terraform import aws_cloudwatch_log_group.application "/aws/ec2/terraform-atlantis-workshop" || true
+                  fi
+                  
+                  # Check if IAM role exists
+                  if aws iam get-role --role-name "terraform-atlantis-workshop-ec2-role" >/dev/null 2>&1; then
+                      echo "IAM role exists, importing to state..."
+                      terraform import aws_iam_role.ec2_role terraform-atlantis-workshop-ec2-role || true
+                  fi
+
             - name: Terraform Plan and Apply
               working-directory: terraform
               run: |
-                  echo "Creating new plan and applying changes..."
+                  echo "Planning and applying changes..."
                   terraform plan -out=tfplan
-                  terraform apply tfplan
+                  terraform apply -auto-approve || {
+                      echo "Apply failed, checking if resources already exist..."
+                      terraform plan -detailed-exitcode
+                      if [ $? -eq 2 ]; then
+                          echo "Resources already exist, applying with refresh..."
+                          terraform refresh
+                          terraform apply -auto-approve
+                      else
+                          exit 1
+                      fi
+                  }
 
             - name: Get Terraform Outputs
               working-directory: terraform
