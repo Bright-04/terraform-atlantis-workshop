@@ -37,7 +37,7 @@ variable "private_subnet_cidr" {
 variable "instance_type" {
   description = "EC2 instance type"
   type        = string
-  default     = "t3.small"
+  default     = "t3.medium"
 }
 
 variable "key_pair_name" {
@@ -55,3 +55,4 @@ variable "s3_bucket_suffix" {
 # Testing enhanced technical comments - changed instance_type from t3.micro to t3.small
 # Testing enhanced technical comments - changed environment from workshop to production
 # Testing enhanced technical comments - reverted project_name to avoid resource conflicts
+# Testing enhanced technical comments - changed instance_type from t3.small to t3.medium for workflow testing
