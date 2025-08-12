@@ -23,7 +23,7 @@ data "aws_availability_zones" "available" {
 
 # Data source for existing internet gateway to avoid limit exceeded
 data "aws_internet_gateway" "existing" {
-  count = 1
+  count = 0 # Set to 0 to avoid the error, we'll create a new one
   filter {
     name   = "attachment.vpc-id"
     values = [aws_vpc.main.id]
@@ -388,7 +388,7 @@ resource "random_string" "bucket_suffix" {
 
 # CloudWatch Log Group for application logs
 resource "aws_cloudwatch_log_group" "application" {
-  name              = "/aws/ec2/${var.project_name}"
+  name              = "/aws/ec2/${var.project_name}-${random_string.bucket_suffix.result}"
   retention_in_days = 7
 
   tags = {
@@ -401,7 +401,7 @@ resource "aws_cloudwatch_log_group" "application" {
 
 # IAM Role for EC2 instances
 resource "aws_iam_role" "ec2_role" {
-  name = "${var.project_name}-ec2-role"
+  name = "${var.project_name}-ec2-role-${random_string.bucket_suffix.result}"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -426,7 +426,7 @@ resource "aws_iam_role" "ec2_role" {
 
 # IAM Instance Profile
 resource "aws_iam_instance_profile" "ec2_profile" {
-  name = "${var.project_name}-ec2-profile"
+  name = "${var.project_name}-ec2-profile-${random_string.bucket_suffix.result}"
   role = aws_iam_role.ec2_role.name
 }
 
@@ -454,7 +454,7 @@ resource "aws_iam_role_policy" "cloudwatch_logs" {
 
 # RDS Database Subnet Group
 resource "aws_db_subnet_group" "main" {
-  name       = "${var.project_name}-db-subnet-group"
+  name       = "${var.project_name}-db-subnet-group-${random_string.bucket_suffix.result}"
   subnet_ids = [aws_subnet.private.id, aws_subnet.public.id]
 
   tags = {
@@ -468,7 +468,7 @@ resource "aws_db_subnet_group" "main" {
 # RDS Parameter Group
 resource "aws_db_parameter_group" "main" {
   family = "postgres14"
-  name   = "${var.project_name}-db-params"
+  name   = "${var.project_name}-db-params-${random_string.bucket_suffix.result}"
 
   parameter {
     name  = "log_connections"

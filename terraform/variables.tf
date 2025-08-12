@@ -68,7 +68,7 @@ variable "db_name" {
 variable "db_username" {
   description = "Database master username"
   type        = string
-  default     = "admin"
+  default     = "workshop_admin"
 }
 
 variable "db_password" {
@@ -87,7 +87,7 @@ variable "db_allocated_storage" {
 variable "db_engine_version" {
   description = "PostgreSQL engine version"
   type        = string
-  default     = "14.10"
+  default     = "14.12"
 }
 
 # Testing GitHub Actions - 08/11/2025 23:23:42
