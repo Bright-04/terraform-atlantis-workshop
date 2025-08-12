@@ -126,8 +126,8 @@ resource "aws_s3_bucket_policy" "workshop" {
     Version = "2012-10-17"
     Statement = [
       {
-        Sid       = "CloudFrontAccess"
-        Effect    = "Allow"
+        Sid    = "CloudFrontAccess"
+        Effect = "Allow"
         Principal = {
           AWS = aws_cloudfront_origin_access_identity.main.iam_arn
         }
