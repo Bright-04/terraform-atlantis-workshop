@@ -245,7 +245,7 @@ aws configure
 # Enter your:
 # - AWS Access Key ID
 # - AWS Secret Access Key
-# - Default region (e.g., us-east-1)
+# - Default region (e.g., ap-southeast-1)
 # - Default output format (json)
 ```
 

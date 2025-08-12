@@ -69,7 +69,10 @@ terraform plan
 
 # Check for any violations
 # You should see validation results in the output
+# Note: Active test resources are included for demonstration
 ```
+
+**Test Resources**: The workshop includes active test resources in `main-aws.tf` that demonstrate compliance validation. These resources are designed to show how violations are detected and prevented.
 
 ## 🎯 What You'll Have After 15 Minutes
 
@@ -164,7 +167,7 @@ aws iam list-attached-user-policies --user-name <your-username>
 
 ## 📊 Quick Cost Estimation
 
-### Expected Monthly Costs (us-east-1)
+### Expected Monthly Costs (ap-southeast-1)
 
 -   **EC2 Instances**: ~$15-20/month (t3.micro)
 -   **S3 Storage**: ~$2-5/month (minimal usage)

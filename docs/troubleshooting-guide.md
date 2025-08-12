@@ -41,7 +41,7 @@ aws sts get-caller-identity
 # Set environment variables
 $env:AWS_ACCESS_KEY_ID = "your-access-key"
 $env:AWS_SECRET_ACCESS_KEY = "your-secret-key"
-$env:AWS_DEFAULT_REGION = "us-east-1"
+$env:AWS_DEFAULT_REGION = "ap-southeast-1"
 
 # Verify
 aws sts get-caller-identity

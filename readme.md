@@ -229,7 +229,9 @@ terraform-atlantis-workshop/
 
 ### How It Works
 
-The compliance validation system uses **native Terraform validation blocks** to enforce:
+The compliance validation system uses **native Terraform validation blocks** as the primary validation mechanism to enforce:
+
+**Note**: While OPA (Open Policy Agent) `.rego` policy files are included for reference and future integration, the current implementation primarily uses Terraform's native `lifecycle.precondition` blocks for real-time validation during the `terraform plan` phase.
 
 1. **Instance Type Restrictions**
 
@@ -261,24 +263,49 @@ Current buckets: [violating bucket names]
 
 ### Testing Compliance Validation
 
-1. **Introduce Violations** (for testing):
+#### Test Resources Status
+
+The workshop includes test resources specifically designed for compliance validation testing:
+
+-   **Active Test Resources**: Located in `terraform/main-aws.tf`
+
+    -   `aws_instance.test_violation` - Tests instance type and tag violations
+    -   `aws_s3_bucket.test_violation` - Tests S3 naming and security violations
+    -   `aws_security_group.test_violation` - Tests security group policy violations
+
+-   **Commented Test Resources**: Located in `terraform/test-policy-violations.tf`
+    -   These are example violations for educational purposes
+    -   Uncomment specific resources to test different violation scenarios
+    -   **Warning**: These resources will cause plan failures when uncommented
+
+#### Testing Process
+
+1. **Test with Active Resources** (Recommended):
+
+    ```bash
+    # Run terraform plan to see current validation status
+    terraform plan
+    ```
+
+2. **Test with Commented Resources** (Educational):
 
     ```terraform
     # In terraform/test-policy-violations.tf
+    # Uncomment and modify specific resources:
     resource "aws_instance" "test_violation" {
       instance_type = "m5.large"  # VIOLATION: Expensive instance
     }
     ```
 
-2. **Run Plan**:
+3. **Run Plan**:
 
     ```bash
     atlantis plan -p terraform-atlantis-workshop
     ```
 
-3. **See Violations** in GitHub PR comments
+4. **See Violations** in GitHub PR comments
 
-4. **Fix Violations** and re-run plan
+5. **Fix Violations** and re-run plan
 
 ## Key Features
 
@@ -329,7 +356,7 @@ The project uses the following default configuration:
 -   **Public Subnet**: 10.0.1.0/24
 -   **Private Subnet**: 10.0.2.0/24
 -   **Instance Type**: t3.micro (compliant)
--   **Region**: us-east-1
+-   **Region**: ap-southeast-1
 -   **Allowed Instance Types**: t3.micro, t3.small, t3.medium
 -   **Required Tags**: Environment, Project, CostCenter
 -   **S3 Naming Convention**: terraform-atlantis-workshop-\*

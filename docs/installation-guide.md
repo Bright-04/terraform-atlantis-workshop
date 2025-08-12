@@ -330,7 +330,7 @@ aws configure
 # Enter the following information:
 # AWS Access Key ID: [Your Access Key ID]
 # AWS Secret Access Key: [Your Secret Access Key]
-# Default region name: us-east-1
+# Default region name: ap-southeast-1
 # Default output format: json
 ```
 
@@ -622,7 +622,7 @@ notepad terraform\terraform.tfvars
 
 ```hcl
 # AWS Configuration
-aws_region = "us-east-1"
+aws_region = "ap-southeast-1"
 environment = "development"
 
 # Instance Configuration

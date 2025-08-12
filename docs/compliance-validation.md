@@ -6,7 +6,9 @@ This document provides comprehensive information about the **Compliance Validati
 
 ## 📋 Overview
 
-The compliance validation system uses **native Terraform validation blocks** to enforce organizational policies and best practices during infrastructure deployment. This ensures that all infrastructure changes comply with security, cost, and operational requirements before deployment.
+The compliance validation system uses **native Terraform validation blocks** as the primary validation mechanism to enforce organizational policies and best practices during infrastructure deployment. This ensures that all infrastructure changes comply with security, cost, and operational requirements before deployment.
+
+**Note**: While OPA (Open Policy Agent) `.rego` policy files are included for reference and future integration, the current implementation primarily uses Terraform's native `lifecycle.precondition` blocks for real-time validation during the `terraform plan` phase.
 
 ## 🏗️ System Architecture
 
@@ -184,12 +186,38 @@ terraform/
 
 ## 🧪 Testing Compliance Validation
 
+### Test Resources Status
+
+The workshop includes test resources specifically designed for compliance validation testing:
+
+-   **Active Test Resources**: Located in `terraform/main-aws.tf`
+
+    -   `aws_instance.test_violation` - Tests instance type and tag violations
+    -   `aws_s3_bucket.test_violation` - Tests S3 naming and security violations
+    -   `aws_security_group.test_violation` - Tests security group policy violations
+
+-   **Commented Test Resources**: Located in `terraform/test-policy-violations.tf`
+    -   These are example violations for educational purposes
+    -   Uncomment specific resources to test different violation scenarios
+    -   **Warning**: These resources will cause plan failures when uncommented
+
 ### Test Setup
 
-#### Step 1: Introduce Violations
+#### Step 1: Test with Active Resources (Recommended)
+
+```powershell
+# Navigate to terraform directory
+cd terraform
+
+# Run terraform plan to see current validation status
+terraform plan
+```
+
+#### Step 2: Test with Commented Resources (Educational)
 
 ```hcl
 # terraform/test-policy-violations.tf
+# Uncomment and modify specific resources:
 resource "aws_instance" "test_violation" {
   ami           = "ami-0c55b159cbfafe1f0"
   instance_type = "m5.large"  # VIOLATION: Expensive instance type
@@ -205,17 +233,14 @@ resource "aws_s3_bucket" "test_violation" {
 }
 ```
 
-#### Step 2: Run Validation
+#### Step 3: Run Validation
 
 ```powershell
-# Navigate to terraform directory
-cd terraform
-
 # Run terraform plan to trigger validation
 terraform plan
 ```
 
-#### Step 3: Review Violations
+#### Step 4: Review Violations
 
 Expected output will show violations:
 
@@ -228,8 +253,8 @@ Expected output will show violations:
 ### Test Cleanup
 
 ```powershell
-# Remove test violations
-Remove-Item test-policy-violations.tf
+# Comment out test violations
+# Edit terraform/test-policy-violations.tf and comment out resources
 
 # Run plan again to verify no violations
 terraform plan

@@ -1037,7 +1037,7 @@ jobs:
 				],
 				"period": 86400,
 				"stat": "Maximum",
-				"region": "us-east-1",
+				"region": "ap-southeast-1",
 				"title": "Daily Estimated Charges by Service"
 			}
 		}

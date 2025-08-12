@@ -379,7 +379,7 @@ terraform {
   backend "s3" {
     bucket = "terraform-atlantis-workshop-state"
     key    = "terraform.tfstate"
-    region = "us-east-1"
+    region = "ap-southeast-1"
 
     # Enable state locking
     dynamodb_table = "terraform-locks"

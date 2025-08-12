@@ -124,7 +124,7 @@ notepad terraform.tfvars
 
 ```hcl
 # AWS Configuration
-aws_region = "us-east-1"
+aws_region = "ap-southeast-1"
 environment = "production"
 
 # Instance Configuration

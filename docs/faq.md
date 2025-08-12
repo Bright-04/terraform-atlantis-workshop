@@ -50,7 +50,7 @@ This FAQ addresses common questions about the **Environment Provisioning Automat
 
 ### Q: How much does this cost?
 
-**A**: Expected monthly costs (us-east-1):
+**A**: Expected monthly costs (ap-southeast-1):
 
 -   **EC2 Instances**: ~$15-20/month (t3.micro)
 -   **S3 Storage**: ~$2-5/month (minimal usage)
