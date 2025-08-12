@@ -140,6 +140,14 @@ resource "aws_security_group" "web" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
+  ingress {
+    description = "Redis Cache Port"
+    from_port   = 6379
+    to_port     = 6379
+    protocol    = "tcp"
+    cidr_blocks = ["10.0.0.0/16"]
+  }
+
   egress {
     from_port   = 0
     to_port     = 0
@@ -179,11 +187,13 @@ resource "aws_instance" "web" {
     Environment  = var.environment
     Project      = var.project_name
     Owner        = "workshop-participant"
-    TestTag      = "aws-production-deployment"
+    TestTag      = "workflow-enhancement-test"
     Timestamp    = formatdate("YYYY-MM-DD-hhmm", timestamp())
     CostCenter   = "production"
     Backup       = "daily"
     InstanceType = var.instance_type
+    WorkflowTest = "enhanced-comments"
+    LastModified = formatdate("YYYY-MM-DD", timestamp())
   }
 }
 
@@ -219,6 +229,40 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "workshop" {
 # S3 Bucket public access block
 resource "aws_s3_bucket_public_access_block" "workshop" {
   bucket = aws_s3_bucket.workshop.id
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
+# S3 Bucket for application logs
+resource "aws_s3_bucket" "application_logs" {
+  bucket = "${var.project_name}-application-logs-${random_string.bucket_suffix.result}"
+
+  tags = {
+    Name        = "${var.project_name}-application-logs"
+    Environment = var.environment
+    Project     = var.project_name
+    CostCenter  = "production"
+    Purpose     = "application-logs"
+  }
+}
+
+# S3 Bucket encryption for application logs
+resource "aws_s3_bucket_server_side_encryption_configuration" "application_logs" {
+  bucket = aws_s3_bucket.application_logs.id
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
+  }
+}
+
+# S3 Bucket public access block for application logs
+resource "aws_s3_bucket_public_access_block" "application_logs" {
+  bucket = aws_s3_bucket.application_logs.id
 
   block_public_acls       = true
   block_public_policy     = true
