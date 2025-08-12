@@ -116,18 +116,18 @@ resource "aws_sns_topic_subscription" "cost_alerts_email" {
 
 ## 📋 Checklist
 
-- [ ] Enable AWS Cost Explorer
-- [ ] Set up budget alerts
-- [ ] Implement cost allocation tags
-- [ ] Create cost monitoring dashboard
-- [ ] Configure cost optimization alarms
-- [ ] Set up scheduled scaling
-- [ ] Implement cost analysis Lambda
-- [ ] Configure SNS notifications
+-   [ ] Enable AWS Cost Explorer
+-   [ ] Set up budget alerts
+-   [ ] Implement cost allocation tags
+-   [ ] Create cost monitoring dashboard
+-   [ ] Configure cost optimization alarms
+-   [ ] Set up scheduled scaling
+-   [ ] Implement cost analysis Lambda
+-   [ ] Configure SNS notifications
 
 ## 🎯 Expected Outcomes
 
-- Complete cost visibility
-- Automated budget control
-- Reduced costs through optimization
-- Proper cost allocation and reporting
+-   Complete cost visibility
+-   Automated budget control
+-   Reduced costs through optimization
+-   Proper cost allocation and reporting
