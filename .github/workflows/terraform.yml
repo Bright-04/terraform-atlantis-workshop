@@ -378,7 +378,7 @@ jobs:
                       **🔍 Next Steps:**
                       1. Wait for health check to complete
                       2. Verify resources in AWS Console
-                      3. Test web server accessibility
+                      3. Verify web server accessibility
                       4. Monitor CloudWatch logs
 
                       **🌐 AWS Console Links:**
@@ -449,7 +449,7 @@ jobs:
                     --query 'Vpcs[].[VpcId,State]' \
                     --output table
 
-            - name: Test Web Server
+            - name: Verify Web Server
               run: |
                   # Get web server IP
                   WEB_IP=$(aws ec2 describe-instances \
@@ -458,7 +458,7 @@ jobs:
                     --output text)
 
                   if [ ! -z "$WEB_IP" ]; then
-                    echo "🌐 Testing web server at $WEB_IP..."
+                    echo "🌐 Verifying web server at $WEB_IP..."
                     curl -f -s "http://$WEB_IP" || echo "❌ Web server not accessible"
                   else
                     echo "⚠️ No web server found"
@@ -476,7 +476,7 @@ jobs:
                       - ✅ EC2 instances verified
                       - ✅ S3 buckets verified  
                       - ✅ VPC networking verified
-                      - ✅ Web server accessibility tested
+                      - ✅ Web server accessibility verified
 
                       **📋 Workflow Status:**
                       - ✅ **terraform-plan**: Completed
@@ -489,7 +489,7 @@ jobs:
 
                       **🔍 Manual Verification:**
                       - Check AWS Console for resource status
-                      - Test web server connectivity
+                      - Verify web server connectivity
                       - Monitor CloudWatch logs for any issues
 
                       **🌐 Quick Links:**
