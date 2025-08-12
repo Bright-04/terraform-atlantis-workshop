@@ -21,8 +21,9 @@ data "aws_availability_zones" "available" {
   state = "available"
 }
 
-# Data source for existing internet gateways to avoid limit exceeded
-data "aws_internet_gateways" "existing" {
+# Data source for existing internet gateway to avoid limit exceeded
+data "aws_internet_gateway" "existing" {
+  count = 1
   filter {
     name   = "attachment.vpc-id"
     values = [aws_vpc.main.id]
@@ -58,7 +59,7 @@ resource "aws_vpc" "main" {
 
 # Internet Gateway - Create only if none exists
 resource "aws_internet_gateway" "main" {
-  count  = length(data.aws_internet_gateways.existing.ids) == 0 ? 1 : 0
+  count  = length(data.aws_internet_gateway.existing) == 0 ? 1 : 0
   vpc_id = aws_vpc.main.id
 
   tags = {
@@ -68,7 +69,7 @@ resource "aws_internet_gateway" "main" {
 
 # Use existing internet gateway if available
 locals {
-  internet_gateway_id = length(data.aws_internet_gateways.existing.ids) > 0 ? data.aws_internet_gateways.existing.ids[0] : aws_internet_gateway.main[0].id
+  internet_gateway_id = length(data.aws_internet_gateway.existing) > 0 ? data.aws_internet_gateway.existing[0].id : aws_internet_gateway.main[0].id
 }
 
 # Public Subnet
