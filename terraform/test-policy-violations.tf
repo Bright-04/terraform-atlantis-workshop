@@ -27,12 +27,7 @@ resource "aws_s3_bucket" "test_violation" {
   }
 }
 
-# Random string for bucket name uniqueness
-resource "random_string" "bucket_suffix" {
-  length  = 8
-  special = false
-  upper   = false
-}
+
 
 # S3 Bucket encryption for test bucket
 resource "aws_s3_bucket_server_side_encryption_configuration" "test_violation" {
