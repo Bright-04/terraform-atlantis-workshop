@@ -51,6 +51,45 @@ variable "s3_bucket_suffix" {
   type        = string
   default     = "workshop-bucket"
 }
+
+# New variables for RDS database
+variable "db_instance_class" {
+  description = "RDS instance class"
+  type        = string
+  default     = "db.t3.micro"
+}
+
+variable "db_name" {
+  description = "Name of the database to create"
+  type        = string
+  default     = "workshopdb"
+}
+
+variable "db_username" {
+  description = "Database master username"
+  type        = string
+  default     = "admin"
+}
+
+variable "db_password" {
+  description = "Database master password"
+  type        = string
+  default     = "WorkshopPassword123!"
+  sensitive   = true
+}
+
+variable "db_allocated_storage" {
+  description = "Allocated storage for RDS instance in GB"
+  type        = number
+  default     = 20
+}
+
+variable "db_engine_version" {
+  description = "PostgreSQL engine version"
+  type        = string
+  default     = "14.10"
+}
+
 # Testing GitHub Actions - 08/11/2025 23:23:42
 # Testing enhanced technical comments - changed instance_type from t3.micro to t3.small
 # Testing enhanced technical comments - changed environment from workshop to production
@@ -58,3 +97,4 @@ variable "s3_bucket_suffix" {
 # Testing enhanced technical comments - changed instance_type from t3.small to t3.medium for workflow testing
 # Testing enhanced technical comments - fixed region to ap-southeast-1 to resolve S3 bucket creation issues
 # Testing enhanced technical comments - added Redis port, new S3 bucket, and enhanced tags for workflow testing
+# Testing enhanced technical comments - added RDS database variables for workflow testing
