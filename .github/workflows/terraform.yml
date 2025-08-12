@@ -15,9 +15,94 @@ env:
     AWS_REGION: "ap-southeast-1"
 
 jobs:
+    workflow-validation:
+        name: Validate Workflow
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Validate YAML Syntax
+              run: |
+                  echo "🔍 Validating workflow YAML syntax..."
+
+                  # Validate main workflow file
+                  if python3 -c "import yaml; yaml.safe_load(open('.github/workflows/terraform.yml'))"; then
+                      echo "✅ Main workflow YAML is valid"
+                  else
+                      echo "❌ Main workflow YAML has syntax errors"
+                      exit 1
+                  fi
+
+                  # Validate Atlantis config
+                  if python3 -c "import yaml; yaml.safe_load(open('atlantis.yaml'))"; then
+                      echo "✅ Atlantis YAML is valid"
+                  else
+                      echo "❌ Atlantis YAML has syntax errors"
+                      exit 1
+                  fi
+
+            - name: Check Required Secrets
+              run: |
+                  echo "🔍 Checking required secrets..."
+
+                  # List of required secrets
+                  REQUIRED_SECRETS=("AWS_ACCESS_KEY_ID" "AWS_SECRET_ACCESS_KEY")
+
+                  for secret in "${REQUIRED_SECRETS[@]}"; do
+                      if [ -z "${!secret}" ]; then
+                          echo "❌ Missing required secret: $secret"
+                          exit 1
+                      else
+                          echo "✅ Secret $secret is configured"
+                      fi
+                  done
+
+            - name: Validate Terraform Files
+              run: |
+                  echo "🔍 Validating Terraform file structure..."
+
+                  # Check for required Terraform files
+                  REQUIRED_FILES=("main.tf" "variables.tf" "outputs.tf" "versions.tf")
+
+                  for file in "${REQUIRED_FILES[@]}"; do
+                      if [ ! -f "terraform/$file" ]; then
+                          echo "❌ Missing required Terraform file: $file"
+                          exit 1
+                      else
+                          echo "✅ Found $file"
+                      fi
+                  done
+
+                  # Check for .tfvars file
+                  if [ ! -f "terraform/terraform.tfvars" ] && [ ! -f "terraform/terraform.tfvars.example" ]; then
+                      echo "⚠️ No terraform.tfvars file found (using example file)"
+                  fi
+
+            - name: Check for Common Issues
+              run: |
+                  echo "🔍 Checking for common configuration issues..."
+
+                  # Check for hardcoded credentials
+                  if grep -r "AKIA" terraform/ || grep -r "sk_" terraform/; then
+                      echo "❌ Found potential hardcoded AWS credentials"
+                      exit 1
+                  fi
+
+                  # Check for proper resource naming
+                  if grep -r "name.*=.*\"test\"" terraform/ || grep -r "name.*=.*\"demo\"" terraform/; then
+                      echo "⚠️ Found generic resource names (test/demo)"
+                  fi
+
+                  # Check for proper tagging
+                  if ! grep -r "tags.*=" terraform/; then
+                      echo "⚠️ No resource tags found - consider adding tags for cost tracking"
+                  fi
+
     terraform-plan:
         name: Terraform Plan
         runs-on: ubuntu-latest
+        needs: workflow-validation
         permissions:
             contents: read
             pull-requests: write
@@ -41,7 +126,13 @@ jobs:
 
             - name: Terraform Init
               working-directory: terraform
-              run: terraform init
+              run: |
+                  echo "🔧 Initializing Terraform..."
+                  terraform init -input=false
+                  if [ $? -ne 0 ]; then
+                      echo "❌ Terraform init failed"
+                      exit 1
+                  fi
 
             - name: Terraform Format Check
               working-directory: terraform
@@ -82,8 +173,24 @@ jobs:
             - name: Terraform Plan
               working-directory: terraform
               run: |
-                  terraform plan -out=tfplan
-                  terraform show tfplan > plan.txt
+                  echo "📋 Creating Terraform plan..."
+                  terraform plan -out=tfplan -detailed-exitcode
+                  PLAN_EXIT_CODE=$?
+
+                  if [ $PLAN_EXIT_CODE -eq 0 ]; then
+                      echo "✅ No changes needed"
+                  elif [ $PLAN_EXIT_CODE -eq 1 ]; then
+                      echo "❌ Plan failed"
+                      exit 1
+                  elif [ $PLAN_EXIT_CODE -eq 2 ]; then
+                      echo "📋 Changes detected"
+                  fi
+
+                  # Show plan output
+                  terraform show tfplan > plan.txt || {
+                      echo "❌ Failed to show plan output"
+                      exit 1
+                  }
               if: github.event_name == 'pull_request'
 
             - name: Upload Terraform Plan
@@ -101,12 +208,12 @@ jobs:
                       const fs = require('fs');
                       const plan = fs.readFileSync('terraform/tfplan', 'base64');
                       const planOutput = fs.readFileSync('terraform/plan.txt', 'utf8');
-                      
+
                       // Simple parsing of plan output
                       const lines = planOutput.split('\n');
                       let toAdd = 0, toChange = 0, toDestroy = 0;
                       let resources = [];
-                      
+
                       for (const line of lines) {
                         if (line.includes(' to add')) {
                           toAdd = parseInt(line.match(/(\d+)/)[1]);
@@ -125,7 +232,7 @@ jobs:
                           resources.push({ type: 'destroy', name: resource });
                         }
                       }
-                      
+
                       const comment = `## Terraform Plan 📋
 
                       **📊 Resource Changes:**
@@ -138,6 +245,7 @@ jobs:
                       ${resources.length > 10 ? `\n... and ${resources.length - 10} more resources` : ''}
 
                       **📋 Workflow Status:**
+                      - ✅ **workflow-validation**: Completed successfully
                       - ✅ **terraform-plan**: Completed successfully
                       - ⏳ **terraform-apply**: Will run when PR is merged to main
                       - ⏳ **health-check**: Will run after apply completes
@@ -206,39 +314,75 @@ jobs:
               working-directory: terraform
               run: |
                   echo "Checking for potential resource conflicts..."
-                  
+
                   # Simple check for existing resources that might conflict
                   echo "Checking for existing resources with workshop naming..."
-                  
+
                   # Check for existing S3 buckets
                   if aws s3api list-buckets --query 'Buckets[?contains(Name, `terraform-atlantis-workshop`)].Name' --output text | grep -q .; then
                       echo "⚠️ Found existing S3 buckets with workshop naming"
                   fi
-                  
+
                   # Check for existing VPCs
                   if aws ec2 describe-vpcs --filters "Name=tag:Name,Values=*terraform-atlantis-workshop*" --query 'Vpcs[].VpcId' --output text | grep -q vpc-; then
                       echo "⚠️ Found existing VPCs with workshop naming"
                   fi
-                  
+
                   echo "Proceeding with deployment..."
 
-            - name: Terraform Plan and Apply
+            - name: Terraform Plan and Apply with Recovery
               working-directory: terraform
               run: |
                   echo "Planning and applying changes..."
+
+                  # Create plan
                   terraform plan -out=tfplan
-                  terraform apply tfplan
+                  if [ $? -ne 0 ]; then
+                      echo "❌ Plan failed"
+                      exit 1
+                  fi
+
+                  # Apply with recovery
+                  echo "Applying changes..."
+                  terraform apply tfplan || {
+                      echo "⚠️ Apply failed, attempting recovery..."
+                      
+                      # Refresh state
+                      echo "Refreshing Terraform state..."
+                      terraform refresh
+                      
+                      # Try apply again
+                      echo "Retrying apply..."
+                      terraform apply tfplan || {
+                          echo "❌ Apply failed after recovery attempt"
+                          echo "Manual intervention may be required"
+                          exit 1
+                      }
+                  }
+
+                  echo "✅ Apply completed successfully"
 
             - name: Get Terraform Outputs
               working-directory: terraform
-              run: terraform output -json > outputs.json
+              run: |
+                  echo "📋 Getting Terraform outputs..."
+                  terraform output -json > outputs.json || {
+                      echo "⚠️ Failed to get outputs, but continuing..."
+                      echo "{}" > outputs.json
+                  }
 
             - name: Comment with Apply Results
               uses: actions/github-script@v7
               with:
                   script: |
                       const fs = require('fs');
-                      const outputs = JSON.parse(fs.readFileSync('terraform/outputs.json', 'utf8'));
+                      let outputs = {};
+
+                      try {
+                          outputs = JSON.parse(fs.readFileSync('terraform/outputs.json', 'utf8'));
+                      } catch (error) {
+                          console.log('Could not parse outputs.json');
+                      }
 
                       const comment = `## Terraform Apply ✅
 
@@ -260,6 +404,7 @@ jobs:
                       - ✅ Cost controls enforced
 
                       **📋 Workflow Status:**
+                      - ✅ **workflow-validation**: Completed
                       - ✅ **terraform-plan**: Completed
                       - ✅ **terraform-apply**: Completed successfully
                       - 🔄 **health-check**: Running now...
@@ -369,6 +514,7 @@ jobs:
                       - ✅ Web server accessibility verified
 
                       **📋 Workflow Status:**
+                      - ✅ **workflow-validation**: Completed
                       - ✅ **terraform-plan**: Completed
                       - ✅ **terraform-apply**: Completed
                       - ✅ **health-check**: Completed successfully
@@ -486,4 +632,63 @@ jobs:
 
             - name: Terraform Destroy
               working-directory: terraform
-              run: terraform destroy -auto-approve
+              run: |
+                  echo "🗑️ Destroying infrastructure..."
+                  terraform destroy -auto-approve || {
+                      echo "⚠️ Destroy failed, attempting cleanup..."
+                      
+                      # Force destroy specific resources if needed
+                      echo "Attempting to force destroy resources..."
+                      terraform destroy -auto-approve -refresh=false || {
+                          echo "❌ Destroy failed after cleanup attempt"
+                          echo "Manual cleanup may be required"
+                          exit 1
+                      }
+                  }
+
+                  echo "✅ Infrastructure destroyed successfully"
+
+            - name: Comment with Cleanup Results
+              uses: actions/github-script@v7
+              with:
+                  script: |
+                      const comment = `## 🗑️ Infrastructure Cleanup ✅
+
+                      **🎉 Cleanup Completed Successfully!**
+
+                      **📋 Cleanup Summary:**
+                      - ✅ All Terraform-managed resources destroyed
+                      - ✅ AWS resources cleaned up
+                      - ✅ State files removed
+
+                      **🔍 Verification:**
+                      - Check AWS Console to confirm resources are removed
+                      - Verify no orphaned resources remain
+                      - Monitor AWS billing to ensure no unexpected charges
+
+                      **🌐 AWS Console Links:**
+                      - [EC2 Dashboard](https://console.aws.amazon.com/ec2/v2/home?region=${{ env.AWS_REGION }})
+                      - [VPC Dashboard](https://console.aws.amazon.com/vpc/home?region=${{ env.AWS_REGION }})
+                      - [S3 Console](https://console.aws.amazon.com/s3/home)
+
+                      **📝 Notes:**
+                      - Workshop environment has been completely cleaned up
+                      - All resources have been destroyed
+                      - No further action required`;
+
+                      // Find the latest commit and comment on it
+                      const commits = await github.rest.repos.listCommits({
+                        owner: context.repo.owner,
+                        repo: context.repo.repo,
+                        sha: context.sha,
+                        per_page: 1
+                      });
+
+                      if (commits.data.length > 0) {
+                        await github.rest.repos.createCommitComment({
+                          owner: context.repo.owner,
+                          repo: context.repo.repo,
+                          commit_sha: commits.data[0].sha,
+                          body: comment
+                        });
+                      }

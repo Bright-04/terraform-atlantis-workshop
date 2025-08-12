@@ -16,34 +16,106 @@ workflows:
     aws-production:
         plan:
             steps:
-                - run: terraform init
-                - run: terraform fmt -check -recursive
-                - run: terraform validate
-                - run: terraform plan -out=tfplan
-                - run: terraform show tfplan
                 - run: |
-                    if [ $? -eq 0 ]; then
-                      echo "## ✅ Terraform Plan Successful" >> $GITHUB_STEP_SUMMARY
-                      echo "All checks passed successfully!" >> $GITHUB_STEP_SUMMARY
-                    else
-                      echo "## ❌ Terraform Plan Failed" >> $GITHUB_STEP_SUMMARY
-                      echo "Please check the logs above for details." >> $GITHUB_STEP_SUMMARY
-                      echo "Common issues:" >> $GITHUB_STEP_SUMMARY
-                      echo "- Run 'terraform fmt' to fix formatting" >> $GITHUB_STEP_SUMMARY
-                      echo "- Run 'terraform validate' to check syntax" >> $GITHUB_STEP_SUMMARY
-                      exit 1
-                    fi
+                      echo "🔧 Initializing Terraform..."
+                      terraform init -input=false
+                      if [ $? -ne 0 ]; then
+                          echo "❌ Terraform init failed"
+                          exit 1
+                      fi
+                - run: |
+                      echo "🔍 Checking Terraform formatting..."
+                      if terraform fmt -check -recursive; then
+                          echo "✅ Terraform formatting is correct"
+                      else
+                          echo "❌ Terraform formatting check failed"
+                          echo "Please run 'terraform fmt -recursive' to fix formatting issues"
+                          exit 1
+                      fi
+                - run: |
+                      echo "🔍 Validating Terraform configuration..."
+                      if terraform validate; then
+                          echo "✅ Terraform configuration is valid"
+                      else
+                          echo "❌ Terraform validation failed"
+                          echo "Please check your Terraform configuration for syntax errors"
+                          exit 1
+                      fi
+                - run: |
+                      echo "📋 Creating Terraform plan..."
+                      terraform plan -out=tfplan -detailed-exitcode
+                      PLAN_EXIT_CODE=$?
+
+                      if [ $PLAN_EXIT_CODE -eq 0 ]; then
+                          echo "✅ No changes needed"
+                          echo "## ✅ Terraform Plan - No Changes" >> $GITHUB_STEP_SUMMARY
+                          echo "No infrastructure changes are required." >> $GITHUB_STEP_SUMMARY
+                          exit 0
+                      elif [ $PLAN_EXIT_CODE -eq 1 ]; then
+                          echo "❌ Plan failed"
+                          echo "## ❌ Terraform Plan Failed" >> $GITHUB_STEP_SUMMARY
+                          echo "Please check the logs above for details." >> $GITHUB_STEP_SUMMARY
+                          exit 1
+                      elif [ $PLAN_EXIT_CODE -eq 2 ]; then
+                          echo "📋 Changes detected"
+                      fi
+                - run: |
+                      echo "📄 Showing plan output..."
+                      if terraform show tfplan > plan_output.txt; then
+                          echo "✅ Plan output generated successfully"
+                          echo "## 📋 Terraform Plan Summary" >> $GITHUB_STEP_SUMMARY
+                          echo "Changes detected. Review the plan output below:" >> $GITHUB_STEP_SUMMARY
+                          echo "" >> $GITHUB_STEP_SUMMARY
+                          echo "**Resource Changes:**" >> $GITHUB_STEP_SUMMARY
+                          
+                          # Parse and display resource changes
+                          grep -E "(will be created|will be updated|will be destroyed)" plan_output.txt | head -10 >> $GITHUB_STEP_SUMMARY || true
+                          
+                          echo "" >> $GITHUB_STEP_SUMMARY
+                          echo "**Full Plan Output:**" >> $GITHUB_STEP_SUMMARY
+                          echo '```' >> $GITHUB_STEP_SUMMARY
+                          cat plan_output.txt >> $GITHUB_STEP_SUMMARY
+                          echo '```' >> $GITHUB_STEP_SUMMARY
+                      else
+                          echo "❌ Failed to show plan output"
+                          echo "## ❌ Plan Output Error" >> $GITHUB_STEP_SUMMARY
+                          echo "Failed to generate plan output. Check the logs for details." >> $GITHUB_STEP_SUMMARY
+                          exit 1
+                      fi
         apply:
             steps:
-                - run: terraform init
-                - run: terraform apply tfplan
-                - run: terraform output -json > outputs.json
                 - run: |
-                      echo "## Terraform Apply Results" >> $GITHUB_STEP_SUMMARY
-                      echo "Infrastructure deployed successfully!" >> $GITHUB_STEP_SUMMARY
-                      if [ -f outputs.json ]; then
-                        echo "Outputs:" >> $GITHUB_STEP_SUMMARY
-                        cat outputs.json >> $GITHUB_STEP_SUMMARY
+                      echo "🔧 Initializing Terraform..."
+                      terraform init -input=false
+                      if [ $? -ne 0 ]; then
+                          echo "❌ Terraform init failed"
+                          exit 1
+                      fi
+                - run: |
+                      echo "📋 Applying Terraform changes..."
+                      if terraform apply tfplan; then
+                          echo "✅ Terraform apply completed successfully"
+                          echo "## ✅ Terraform Apply Successful" >> $GITHUB_STEP_SUMMARY
+                          echo "Infrastructure has been deployed successfully!" >> $GITHUB_STEP_SUMMARY
+                      else
+                          echo "❌ Terraform apply failed"
+                          echo "## ❌ Terraform Apply Failed" >> $GITHUB_STEP_SUMMARY
+                          echo "Please check the logs above for details." >> $GITHUB_STEP_SUMMARY
+                          exit 1
+                      fi
+                - run: |
+                      echo "📋 Getting Terraform outputs..."
+                      if terraform output -json > outputs.json; then
+                          echo "✅ Terraform outputs retrieved successfully"
+                          echo "## 📊 Infrastructure Outputs" >> $GITHUB_STEP_SUMMARY
+                          echo "Infrastructure outputs:" >> $GITHUB_STEP_SUMMARY
+                          echo '```json' >> $GITHUB_STEP_SUMMARY
+                          cat outputs.json >> $GITHUB_STEP_SUMMARY
+                          echo '```' >> $GITHUB_STEP_SUMMARY
+                      else
+                          echo "⚠️ Failed to get outputs, but continuing..."
+                          echo "## ⚠️ Output Retrieval Warning" >> $GITHUB_STEP_SUMMARY
+                          echo "Could not retrieve Terraform outputs, but deployment completed." >> $GITHUB_STEP_SUMMARY
                       fi
 
 # Repository settings
