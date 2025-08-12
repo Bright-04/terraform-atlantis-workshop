@@ -8,10 +8,10 @@ Atlantis is a GitOps workflow automation tool that integrates Terraform with Git
 
 GitOps is an operational framework that takes DevOps best practices used for application development and applies them to infrastructure automation. The core principles are:
 
-- **Declarative**: All desired states are expressed declaratively
-- **Versioned and Immutable**: Desired states are stored in a way that enforces immutability and versioning
-- **Pulled Automatically**: Software agents automatically pull the desired state declarations
-- **Continuously Reconciled**: Software agents continuously observe actual state vs. desired state
+-   **Declarative**: All desired states are expressed declaratively
+-   **Versioned and Immutable**: Desired states are stored in a way that enforces immutability and versioning
+-   **Pulled Automatically**: Software agents automatically pull the desired state declarations
+-   **Continuously Reconciled**: Software agents continuously observe actual state vs. desired state
 
 ## Atlantis Architecture
 
@@ -37,12 +37,12 @@ GitOps is an operational framework that takes DevOps best practices used for app
 
 ### Key Features
 
-- **Pull Request Integration**: Comments trigger Terraform operations
-- **Automated Planning**: `terraform plan` runs automatically on PR creation
-- **Approval Workflow**: `terraform apply` requires explicit approval
-- **State Management**: Integrates with remote state backends
-- **Multi-Environment Support**: Supports multiple workspaces/environments
-- **Security**: Runs in isolated containers with temporary credentials
+-   **Pull Request Integration**: Comments trigger Terraform operations
+-   **Automated Planning**: `terraform plan` runs automatically on PR creation
+-   **Approval Workflow**: `terraform apply` requires explicit approval
+-   **State Management**: Integrates with remote state backends
+-   **Multi-Environment Support**: Supports multiple workspaces/environments
+-   **Security**: Runs in isolated containers with temporary credentials
 
 ## Atlantis Workflow
 
@@ -69,6 +69,7 @@ atlantis plan
 ```
 
 **Output in PR comment:**
+
 ```
 Ran Plan for dir: `terraform` workspace: `default`
 
@@ -98,6 +99,7 @@ atlantis apply
 ```
 
 **Output in PR comment:**
+
 ```
 Ran Apply for dir: `terraform` workspace: `default`
 
@@ -125,25 +127,25 @@ git pull origin main
 ```yaml
 version: 3
 projects:
-- name: terraform-workshop
-  dir: terraform
-  workspace: default
-  terraform_version: v1.0.0
-  autoplan:
-    when_modified: ["*.tf", "../modules/**/*.tf"]
-    enabled: true
-  apply_requirements: [approved, mergeable]
-  workflow: custom
-  delete_source_branch_on_merge: true
+    - name: terraform-workshop
+      dir: terraform
+      workspace: default
+      terraform_version: v1.0.0
+      autoplan:
+          when_modified: ["*.tf", "../modules/**/*.tf"]
+          enabled: true
+      apply_requirements: [approved, mergeable]
+      workflow: custom
+      delete_source_branch_on_merge: true
 
 workflows:
-  custom:
-    plan:
-      steps:
-      - run: terraform plan -out=$PLANFILE
-    apply:
-      steps:
-      - run: terraform apply $PLANFILE
+    custom:
+        plan:
+            steps:
+                - run: terraform plan -out=$PLANFILE
+        apply:
+            steps:
+                - run: terraform apply $PLANFILE
 ```
 
 ### 2. Atlantis Server Configuration
@@ -151,19 +153,19 @@ workflows:
 ```yaml
 # atlantis.yaml (server config)
 repos:
-  - id: /.*/
-    apply_requirements: [approved, mergeable]
-    allowed_overrides: [apply_requirements, workflow]
-    allow_custom_workflows: true
+    - id: /.*/
+      apply_requirements: [approved, mergeable]
+      allowed_overrides: [apply_requirements, workflow]
+      allow_custom_workflows: true
 
 workflows:
-  custom:
-    plan:
-      steps:
-      - run: terraform plan -out=$PLANFILE
-    apply:
-      steps:
-      - run: terraform apply $PLANFILE
+    custom:
+        plan:
+            steps:
+                - run: terraform plan -out=$PLANFILE
+        apply:
+            steps:
+                - run: terraform apply $PLANFILE
 ```
 
 ### 3. GitHub Webhook Configuration
@@ -185,27 +187,27 @@ https://atlantis.yourdomain.com/events
 ```yaml
 # atlantis.yaml
 projects:
-- name: terraform-workshop-dev
-  dir: terraform
-  workspace: dev
-  autoplan:
-    when_modified: ["*.tf"]
-    enabled: true
+    - name: terraform-workshop-dev
+      dir: terraform
+      workspace: dev
+      autoplan:
+          when_modified: ["*.tf"]
+          enabled: true
 
-- name: terraform-workshop-staging
-  dir: terraform
-  workspace: staging
-  autoplan:
-    when_modified: ["*.tf"]
-    enabled: false  # Manual planning only
+    - name: terraform-workshop-staging
+      dir: terraform
+      workspace: staging
+      autoplan:
+          when_modified: ["*.tf"]
+          enabled: false # Manual planning only
 
-- name: terraform-workshop-prod
-  dir: terraform
-  workspace: prod
-  autoplan:
-    when_modified: ["*.tf"]
-    enabled: false  # Manual planning only
-  apply_requirements: [approved, mergeable, pbc]
+    - name: terraform-workshop-prod
+      dir: terraform
+      workspace: prod
+      autoplan:
+          when_modified: ["*.tf"]
+          enabled: false # Manual planning only
+      apply_requirements: [approved, mergeable, pbc]
 ```
 
 ### Directory Strategy
@@ -238,12 +240,12 @@ repository/
 ```yaml
 # atlantis.yaml
 repos:
-  - id: /.*/
-    apply_requirements: [approved, mergeable]
-    allowed_overrides: [apply_requirements, workflow]
-    allow_custom_workflows: true
-    # Restrict who can apply
-    allowed_apply_requirements: [approved, mergeable, pbc]
+    - id: /.*/
+      apply_requirements: [approved, mergeable]
+      allowed_overrides: [apply_requirements, workflow]
+      allow_custom_workflows: true
+      # Restrict who can apply
+      allowed_apply_requirements: [approved, mergeable, pbc]
 ```
 
 ### 2. Credential Management
@@ -319,22 +321,22 @@ atlantis plan -- -import="aws_instance.web:i-12345678"
 name: Atlantis Integration
 
 on:
-  pull_request:
-    types: [opened, synchronize, closed]
+    pull_request:
+        types: [opened, synchronize, closed]
 
 jobs:
-  atlantis:
-    runs-on: ubuntu-latest
-    steps:
-    - name: Atlantis Plan
-      if: github.event.action == 'opened' || github.event.action == 'synchronize'
-      run: |
-        echo "atlantis plan" | gh pr comment ${{ github.event.pull_request.number }} --body -
-    
-    - name: Atlantis Apply
-      if: github.event.action == 'closed' && github.event.pull_request.merged == true
-      run: |
-        echo "atlantis apply" | gh pr comment ${{ github.event.pull_request.number }} --body -
+    atlantis:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Atlantis Plan
+              if: github.event.action == 'opened' || github.event.action == 'synchronize'
+              run: |
+                  echo "atlantis plan" | gh pr comment ${{ github.event.pull_request.number }} --body -
+
+            - name: Atlantis Apply
+              if: github.event.action == 'closed' && github.event.pull_request.merged == true
+              run: |
+                  echo "atlantis apply" | gh pr comment ${{ github.event.pull_request.number }} --body -
 ```
 
 ### Slack Integration
@@ -342,10 +344,10 @@ jobs:
 ```yaml
 # atlantis.yaml
 notifiers:
-  - kind: slack
-    channel: "#terraform"
-    token: $SLACK_TOKEN
-    workspace: your-workspace
+    - kind: slack
+      channel: "#terraform"
+      token: $SLACK_TOKEN
+      workspace: your-workspace
 ```
 
 ## Troubleshooting
@@ -353,31 +355,34 @@ notifiers:
 ### Common Issues
 
 1. **Webhook Not Received**
-   ```bash
-   # Check Atlantis logs
-   kubectl logs -f deployment/atlantis
-   
-   # Verify webhook URL
-   curl -X POST https://atlantis.yourdomain.com/events
-   ```
+
+    ```bash
+    # Check Atlantis logs
+    kubectl logs -f deployment/atlantis
+
+    # Verify webhook URL
+    curl -X POST https://atlantis.yourdomain.com/events
+    ```
 
 2. **Permission Denied**
-   ```bash
-   # Check AWS credentials
-   aws sts get-caller-identity
-   
-   # Verify IAM permissions
-   aws iam get-role --role-name atlantis-role
-   ```
+
+    ```bash
+    # Check AWS credentials
+    aws sts get-caller-identity
+
+    # Verify IAM permissions
+    aws iam get-role --role-name atlantis-role
+    ```
 
 3. **State Lock Issues**
-   ```bash
-   # Force unlock state
-   terraform force-unlock LOCK_ID
-   
-   # Check DynamoDB locks
-   aws dynamodb scan --table-name terraform-locks
-   ```
+
+    ```bash
+    # Force unlock state
+    terraform force-unlock LOCK_ID
+
+    # Check DynamoDB locks
+    aws dynamodb scan --table-name terraform-locks
+    ```
 
 ### Debugging Commands
 
@@ -417,17 +422,17 @@ repository/
 
 ### 2. Workflow Design
 
-- **Automated Planning**: Enable autoplan for development
-- **Manual Approval**: Require approval for production changes
-- **Branch Protection**: Use branch protection rules
-- **Code Review**: Require code review before merge
+-   **Automated Planning**: Enable autoplan for development
+-   **Manual Approval**: Require approval for production changes
+-   **Branch Protection**: Use branch protection rules
+-   **Code Review**: Require code review before merge
 
 ### 3. State Management
 
-- **Remote State**: Use S3 or similar for state storage
-- **State Locking**: Use DynamoDB for state locking
-- **State Encryption**: Enable encryption for state files
-- **State Backup**: Regular backups of state files
+-   **Remote State**: Use S3 or similar for state storage
+-   **State Locking**: Use DynamoDB for state locking
+-   **State Encryption**: Enable encryption for state files
+-   **State Backup**: Regular backups of state files
 
 ## Monitoring and Observability
 
@@ -436,9 +441,9 @@ repository/
 ```yaml
 # atlantis.yaml
 metrics:
-  enabled: true
-  port: 9090
-  path: /metrics
+    enabled: true
+    port: 9090
+    path: /metrics
 ```
 
 ### 2. Logging
@@ -446,8 +451,8 @@ metrics:
 ```yaml
 # atlantis.yaml
 logging:
-  level: info
-  format: json
+    level: info
+    format: json
 ```
 
 ### 3. Health Checks
@@ -472,7 +477,7 @@ After setting up Atlantis:
 
 ## Resources
 
-- [Atlantis Documentation](https://www.runatlantis.io/docs/)
-- [Atlantis GitHub Repository](https://github.com/runatlantis/atlantis)
-- [GitOps Principles](https://www.gitops.tech/)
-- [Terraform Best Practices](https://www.terraform.io/docs/cloud/guides/recommended-practices/index.html)
+-   [Atlantis Documentation](https://www.runatlantis.io/docs/)
+-   [Atlantis GitHub Repository](https://github.com/runatlantis/atlantis)
+-   [GitOps Principles](https://www.gitops.tech/)
+-   [Terraform Best Practices](https://www.terraform.io/docs/cloud/guides/recommended-practices/index.html)

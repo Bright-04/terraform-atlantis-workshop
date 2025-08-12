@@ -10,11 +10,11 @@ Terraform is an open-source Infrastructure as Code tool created by HashiCorp. It
 
 ### Key Concepts
 
-- **Declarative**: You describe the desired state of your infrastructure
-- **Version Control**: Infrastructure configurations are stored in version control
-- **Provider Agnostic**: Supports multiple cloud providers (AWS, Azure, GCP, etc.)
-- **State Management**: Tracks the current state of your infrastructure
-- **Dependency Management**: Automatically handles resource dependencies
+-   **Declarative**: You describe the desired state of your infrastructure
+-   **Version Control**: Infrastructure configurations are stored in version control
+-   **Provider Agnostic**: Supports multiple cloud providers (AWS, Azure, GCP, etc.)
+-   **State Management**: Tracks the current state of your infrastructure
+-   **Dependency Management**: Automatically handles resource dependencies
 
 ## Core Terraform Components
 
@@ -31,7 +31,7 @@ provider "aws" {
 resource "aws_instance" "web" {
   ami           = "ami-12345678"
   instance_type = "t2.micro"
-  
+
   tags = {
     Name = "WebServer"
   }
@@ -67,10 +67,10 @@ Resources are the infrastructure objects you want to create:
 resource "aws_instance" "web_server" {
   ami           = var.ami_id
   instance_type = var.instance_type
-  
+
   vpc_security_group_ids = [aws_security_group.web.id]
   subnet_id              = aws_subnet.public.id
-  
+
   tags = {
     Name = "Web Server"
     Environment = "Production"
@@ -81,14 +81,14 @@ resource "aws_instance" "web_server" {
 resource "aws_security_group" "web" {
   name        = "web-sg"
   description = "Security group for web servers"
-  
+
   ingress {
     from_port   = 80
     to_port     = 80
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
-  
+
   egress {
     from_port   = 0
     to_port     = 0
@@ -107,7 +107,7 @@ Data sources allow you to fetch information about existing resources:
 data "aws_ami" "amazon_linux" {
   most_recent = true
   owners      = ["amazon"]
-  
+
   filter {
     name   = "name"
     values = ["amzn-ami-hvm-*-x86_64-gp2"]
@@ -146,7 +146,7 @@ variable "environment" {
 resource "aws_instance" "web" {
   ami           = var.ami_id
   instance_type = var.instance_type
-  
+
   tags = {
     Environment = var.environment
   }
@@ -183,9 +183,9 @@ output "private_ip" {
 terraform init
 ```
 
-- Downloads required providers
-- Initializes the working directory
-- Sets up backend configuration
+-   Downloads required providers
+-   Initializes the working directory
+-   Sets up backend configuration
 
 ### 2. Plan (`terraform plan`)
 
@@ -193,10 +193,10 @@ terraform init
 terraform plan
 ```
 
-- Creates an execution plan
-- Shows what Terraform will do
-- Validates configuration syntax
-- Checks for errors
+-   Creates an execution plan
+-   Shows what Terraform will do
+-   Validates configuration syntax
+-   Checks for errors
 
 ### 3. Apply (`terraform apply`)
 
@@ -204,9 +204,9 @@ terraform plan
 terraform apply
 ```
 
-- Executes the plan
-- Creates, modifies, or destroys resources
-- Updates the state file
+-   Executes the plan
+-   Creates, modifies, or destroys resources
+-   Updates the state file
 
 ### 4. Destroy (`terraform destroy`)
 
@@ -214,8 +214,8 @@ terraform apply
 terraform destroy
 ```
 
-- Removes all resources managed by Terraform
-- Updates the state file
+-   Removes all resources managed by Terraform
+-   Updates the state file
 
 ## State Management
 
@@ -225,29 +225,29 @@ Terraform state is a snapshot that maps real-world resources to your configurati
 
 ```json
 {
-  "version": 4,
-  "terraform_version": "1.0.0",
-  "serial": 1,
-  "lineage": "12345678-1234-1234-1234-123456789012",
-  "outputs": {},
-  "resources": [
-    {
-      "mode": "managed",
-      "type": "aws_instance",
-      "name": "web",
-      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
-      "instances": [
-        {
-          "schema_version": 1,
-          "attributes": {
-            "id": "i-1234567890abcdef0",
-            "instance_type": "t2.micro",
-            "ami": "ami-12345678"
-          }
-        }
-      ]
-    }
-  ]
+	"version": 4,
+	"terraform_version": "1.0.0",
+	"serial": 1,
+	"lineage": "12345678-1234-1234-1234-123456789012",
+	"outputs": {},
+	"resources": [
+		{
+			"mode": "managed",
+			"type": "aws_instance",
+			"name": "web",
+			"provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+			"instances": [
+				{
+					"schema_version": 1,
+					"attributes": {
+						"id": "i-1234567890abcdef0",
+						"instance_type": "t2.micro",
+						"ami": "ami-12345678"
+					}
+				}
+			]
+		}
+	]
 }
 ```
 
@@ -318,7 +318,7 @@ output "instance_id" {
 # main.tf
 module "web_server" {
   source = "./modules/web-server"
-  
+
   instance_type = "t2.micro"
   ami_id        = "ami-12345678"
 }
@@ -360,7 +360,7 @@ terraform plan -detailed-exitcode
 ```hcl
 resource "aws_instance" "web" {
   count = var.create_web_server ? 1 : 0
-  
+
   ami           = var.ami_id
   instance_type = var.instance_type
 }
@@ -379,7 +379,7 @@ data "aws_subnet" "selected" {
 
 resource "aws_instance" "web" {
   subnet_id = data.aws_subnet.selected.id
-  
+
   depends_on = [data.aws_subnet.selected]
 }
 ```
@@ -389,7 +389,7 @@ resource "aws_instance" "web" {
 ```hcl
 resource "aws_security_group" "web" {
   name = "web-sg"
-  
+
   dynamic "ingress" {
     for_each = var.allowed_ports
     content {
@@ -407,22 +407,26 @@ resource "aws_security_group" "web" {
 ### Common Errors and Solutions
 
 1. **Provider Not Found**
-   ```bash
-   Error: provider "aws" is not available
-   ```
-   Solution: Run `terraform init`
+
+    ```bash
+    Error: provider "aws" is not available
+    ```
+
+    Solution: Run `terraform init`
 
 2. **State Lock**
-   ```bash
-   Error: Error acquiring the state lock
-   ```
-   Solution: Check for running Terraform processes or force unlock
+
+    ```bash
+    Error: Error acquiring the state lock
+    ```
+
+    Solution: Check for running Terraform processes or force unlock
 
 3. **Resource Already Exists**
-   ```bash
-   Error: resource already exists
-   ```
-   Solution: Import existing resource or destroy and recreate
+    ```bash
+    Error: resource already exists
+    ```
+    Solution: Import existing resource or destroy and recreate
 
 ## Next Steps
 
@@ -436,7 +440,7 @@ After understanding these fundamentals:
 
 ## Resources
 
-- [Terraform Documentation](https://www.terraform.io/docs)
-- [Terraform Registry](https://registry.terraform.io/)
-- [Terraform Best Practices](https://www.terraform.io/docs/cloud/guides/recommended-practices/index.html)
-- [HashiCorp Learn](https://learn.hashicorp.com/terraform)
+-   [Terraform Documentation](https://www.terraform.io/docs)
+-   [Terraform Registry](https://registry.terraform.io/)
+-   [Terraform Best Practices](https://www.terraform.io/docs/cloud/guides/recommended-practices/index.html)
+-   [HashiCorp Learn](https://learn.hashicorp.com/terraform)
